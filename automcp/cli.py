@@ -3,7 +3,7 @@
 import asyncio
 import json
 from pathlib import Path
-from typing import Annotated, Optional
+from typing import Annotated
 
 import typer
 import yaml
