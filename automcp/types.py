@@ -1,30 +1,50 @@
 """Core data models for MCP service operations."""
 
-from datetime import datetime
-from enum import Enum
+from datetime import UTC, datetime
 from typing import Any, Dict, List, Optional
 from uuid import uuid4
 
 import mcp.types as types
-from pydantic import BaseModel, PrivateAttr, field_validator
+from pydantic import BaseModel, Field, PrivateAttr
 
 
-class OperationType(str, Enum):
-    """Types of MCP operations."""
+class GroupConfig(BaseModel):
+    """Configuration for a single service group."""
 
-    TOOL = "tool"
-    PROMPT = "prompt"
-    RESOURCE = "resource"
+    name: str = Field(..., description="Group name")
+    description: str | None = Field(None, description="Group description")
+    packages: list[str] = Field(default_factory=list, description="Required packages")
+    config: dict[str, Any] = Field(
+        default_factory=dict, description="Group-specific configuration"
+    )
+    env_vars: dict[str, str] = Field(
+        default_factory=dict, description="Environment variables"
+    )
+
+
+class ServiceConfig(BaseModel):
+    """Configuration for a service containing multiple groups."""
+
+    name: str = Field(..., description="Service name")
+    description: str | None = Field(None, description="Service description")
+    groups: dict[str, GroupConfig] = Field(
+        ..., description="Group configurations keyed by class path"
+    )
+    packages: list[str] = Field(
+        default_factory=list, description="Shared packages across groups"
+    )
+    env_vars: dict[str, str] = Field(
+        default_factory=dict, description="Shared environment variables"
+    )
 
 
 class ExecutionRequest(BaseModel):
     """Request model for operation execution."""
 
     _id: str = PrivateAttr(default_factory=uuid4)
-    _created_at: datetime = PrivateAttr(default_factory=datetime.utcnow)
-    type: OperationType
-    operation: str
-    arguments: dict[str, Any] | None = None
+    _created_at: datetime = PrivateAttr(default_factory=datetime.now(UTC))
+    operation: str = Field(..., description="Operation name to execute")
+    arguments: dict[str, Any] | None = Field(None, description="Operation arguments")
 
 
 class ExecutionResponse(BaseModel):
@@ -32,27 +52,28 @@ class ExecutionResponse(BaseModel):
 
     _id: str = PrivateAttr(default_factory=uuid4)
     _request_id: str = PrivateAttr()
-    _created_at: datetime = PrivateAttr(default_factory=datetime.utcnow)
-    content: types.TextContent
-    error: str | None = None
+    _created_at: datetime = PrivateAttr(default_factory=datetime.now(UTC))
+    content: types.TextContent = Field(..., description="Operation result content")
+    error: str | None = Field(None, description="Error message if execution failed")
 
-    @field_validator("content", mode="before")
-    @classmethod
-    def validate_content(cls, content: types.TextContent) -> types.TextContent:
-        """Convert Pydantic models in content to JSON."""
-        if isinstance(content.text, BaseModel):
-            content.text = content.text.model_dump_json()
-        return content
+    def model_dump(self) -> dict[str, Any]:
+        """Custom dump to handle Pydantic models in content."""
+        data = super().model_dump()
+        if isinstance(data["content"].text, BaseModel):
+            data["content"].text = data["content"].text.model_dump_json()
+        return data
 
 
 class ServiceRequest(BaseModel):
-    """Container for multiple operation requests."""
+    """Container for multiple execution requests."""
 
-    requests: list[ExecutionRequest]
+    requests: list[ExecutionRequest] = Field(
+        ..., description="List of execution requests"
+    )
 
 
 class ServiceResponse(BaseModel):
-    """Response containing concatenated operation results."""
+    """Combined response for multiple executions."""
 
-    content: types.TextContent
-    errors: list[str] | None = None
+    content: types.TextContent = Field(..., description="Combined execution results")
+    errors: list[str] | None = Field(None, description="List of execution errors")
