@@ -1,7 +1,7 @@
 """Core data models for MCP service operations."""
 
 from datetime import UTC, datetime
-from typing import Any, Dict, List, Optional
+from typing import Any
 from uuid import uuid4
 
 import mcp.types as types
