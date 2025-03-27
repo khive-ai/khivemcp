@@ -1,0 +1,17 @@
+name: math-service
+description: Example mathematical operations service
+
+groups:
+  "examples.math_service:MathGroup":
+    name: math-ops
+    description: Basic mathematical operations
+    config:
+      precision: 4
+      max_value: 1000000
+
+  "examples.stats:StatsGroup":
+    name: stats-ops
+    description: Statistical operations
+    config:
+      precision: 4
+      sample_size: 1000

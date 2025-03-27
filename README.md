@@ -1,135 +1,182 @@
 # AutoMCP
 
-A lightweight, configurable Model Context Protocol (MCP) server implementation.
+A lightweight implementation of the Model Context Protocol (MCP) with a modern web interface.
 
 ## Features
 
-- Simple service group creation
-- Configuration-based deployment
-- Support for single and multi-group services
-- Seamless Claude integration
-- Concurrent request handling
-- Strong input validation
+- **Service Groups**: Organize operations into logical groups
+- **Configuration-Driven**: Easy service deployment via YAML/JSON configs
+- **Modern Web Interface**: FastAPI backend with Streamlit frontend
+- **Docker Support**: Easy deployment with Docker and Docker Compose
+- **Development Tools**: Comprehensive development and testing utilities
 
 ## Installation
 
-```bash
-# Using uv (recommended)
-uv pip install automcp
+### Using pip
 
-# Using pip
+```bash
 pip install automcp
 ```
 
-## Quick Start
+### Development Setup
 
-1. Create a service group:
-```python
-# my_group.py
-from automcp import ServiceGroup, operation
-from pydantic import BaseModel
-
-class MathInput(BaseModel):
-    x: float
-    y: float
-
-class MathGroup(ServiceGroup):
-    @operation(schema=MathInput)
-    async def add(self, input: MathInput) -> ExecutionResponse:
-        """Add two numbers."""
-        result = input.x + input.y
-        return ExecutionResponse(
-            content=types.TextContent(
-                type="text",
-                text=str(result)
-            )
-        )
-```
-
-2. Create configuration:
-```yaml
-# service.yaml
-name: math-service
-description: Mathematical operations
-
-groups:
-  "my_group:MathGroup":
-    name: math-ops
-    description: Basic math operations
-    config:
-      precision: 4
-```
-
-3. Run the server:
 ```bash
-automcp run --config service.yaml
+# Clone repository
+git clone https://github.com/yourusername/automcp
+cd automcp
+
+# Setup development environment
+./scripts/dev.sh setup
+```
+
+## Usage
+
+### Running a Service
+
+1. Create a service configuration (e.g., `service.yaml`):
+```yaml
+name: my-service
+description: Example service
+groups:
+  "mypackage.groups:MyGroup":
+    name: my-group
+    config:
+      setting: value
+```
+
+2. Run the service:
+```bash
+automcp run service.yaml
+```
+
+### Using the Web Interface
+
+1. Start the API server:
+```bash
+./scripts/dev.sh api
+```
+
+2. Start the frontend:
+```bash
+./scripts/dev.sh frontend
+```
+
+3. Visit http://localhost:8501 in your browser
+
+## Docker Deployment
+
+### Using Docker Compose
+
+```bash
+# Start all services
+docker-compose up -d
+
+# View logs
+docker-compose logs -f
+
+# Stop services
+docker-compose down
+```
+
+### Individual Services
+
+```bash
+# Build image
+docker build -t automcp .
+
+# Run API server
+docker run -p 8000:8000 automcp
+
+# Run frontend
+docker run -p 8501:8501 automcp streamlit run automcp/api/frontend.py
+```
+
+## Development
+
+### Directory Structure
+
+```
+automcp/
+├── core/           # Core implementation
+├── api/            # FastAPI and Streamlit apps
+├── schemas/        # Data models
+├── services/       # Service implementations
+└── utils/          # Utility functions
+
+scripts/            # Development scripts
+tests/              # Test suite
+examples/           # Example services
+docs/               # Documentation
+```
+
+### Development Commands
+
+```bash
+# Setup environment
+./scripts/dev.sh setup
+
+# Run tests
+./scripts/dev.sh test
+
+# Run linters
+./scripts/dev.sh lint
+
+# Start services
+./scripts/dev.sh all
+
+# Clean environment
+./scripts/dev.sh clean
+```
+
+### Running Tests
+
+```bash
+# Run all tests
+pytest
+
+# Run with coverage
+pytest --cov=automcp
+
+# Run specific test
+pytest tests/test_specific.py
 ```
 
 ## Configuration
 
-### Service Configuration (YAML)
+### Service Configuration
+
 ```yaml
-name: my-service
+name: service-name
 description: Service description
 groups:
   "module.path:GroupClass":
     name: group-name
     packages:
       - package1
-      - package2
     config:
-      custom_setting: value
+      setting: value
 ```
 
-### Group Configuration (JSON)
+### Group Configuration
+
 ```json
 {
   "name": "group-name",
   "description": "Group description",
-  "packages": ["package1"],
   "config": {
-    "custom_setting": "value"
+    "setting": "value"
   }
 }
 ```
 
-## CLI Usage
-
-```bash
-# Run service
-automcp run --config service.yaml
-
-# Run specific group
-automcp run --config service.yaml --group group-name
-
-# Run single group
-automcp run --config group.json
-```
-
-## Development
-
-### Running Tests
-```bash
-pytest tests/
-```
-
-### Creating New Operations
-1. Define input schema using Pydantic
-2. Create operation with @operation decorator
-3. Add operation documentation
-4. Add tests
-
 ## Contributing
 
 1. Fork the repository
-2. Create your feature branch
-3. Write tests
-4. Submit pull request
+2. Create a feature branch
+3. Make your changes
+4. Run tests and linters
+5. Submit a pull request
 
 ## License
 
-MIT
-
-## Credits
-
-Built with [Model Context Protocol](https://github.com/anthropics/mcp)
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

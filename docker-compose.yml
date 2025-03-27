@@ -1,0 +1,59 @@
+version: '3.8'
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./config:/etc/automcp
+    environment:
+      - ENVIRONMENT=production
+      - LOG_LEVEL=INFO
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: streamlit run automcp/api/frontend.py
+    ports:
+      - "8501:8501"
+    environment:
+      - AUTOMCP_API_URL=http://api:8000
+    depends_on:
+      - api
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8501/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+    restart: unless-stopped
+
+  # Example math service
+  math-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: automcp run /etc/automcp/math-service.yaml
+    volumes:
+      - ./examples:/etc/automcp
+    environment:
+      - LOG_LEVEL=INFO
+    depends_on:
+      - api
+    restart: unless-stopped
+
+networks:
+  default:
+    name: automcp-network
+    driver: bridge

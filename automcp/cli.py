@@ -1,15 +1,18 @@
-"""AutoMCP CLI tools."""
+"""AutoMCP CLI interface."""
 
 import asyncio
 import json
+import traceback
 from pathlib import Path
-from typing import Annotated
+from typing import Optional
 
 import typer
 import yaml
+from typing_extensions import Annotated
 
-from .server import AutoMCPServer
-from .types import GroupConfig, ServiceConfig
+from automcp.core.errors import ConfigurationError
+from automcp.core.server import AutoMCPServer
+from automcp.schemas.base import GroupConfig, ServiceConfig
 
 app = typer.Typer(
     name="automcp",
@@ -31,35 +34,19 @@ def load_config(path: Path) -> ServiceConfig | GroupConfig:
                 data = json.load(f)
             return GroupConfig(**data)
     except Exception as e:
-        typer.echo(f"Failed to load config: {e}")
-        raise typer.Exit(1)
-
-
-async def run_server(server: AutoMCPServer) -> None:
-    """Run MCP server."""
-    try:
-        async with server:
-            await server.start()
-    except KeyboardInterrupt:
-        pass
-    except Exception as e:
-        typer.echo(f"Server error: {e}")
-        raise typer.Exit(1)
+        raise ConfigurationError(f"Failed to load config: {str(e)}")
 
 
 @app.command()
 def run(
-    config: Annotated[Path, typer.Argument(help="Path to config file (YAML/JSON)")],
-    group: Annotated[
-        str | None,
-        typer.Option("--group", "-g", help="Specific group to run from service config"),
-    ] = None,
-    timeout: Annotated[
-        float, typer.Option("--timeout", "-t", help="Operation timeout in seconds")
-    ] = 30.0,
+    config: Annotated[Path, typer.Argument(help="Path to configuration file")],
+    group: Annotated[Optional[str], typer.Option(help="Specific group to run")] = None,
+    timeout: Annotated[float, typer.Option(help="Operation timeout in seconds")] = 30.0,
+    debug: Annotated[bool, typer.Option(help="Enable debug mode")] = False,
 ) -> None:
     """Run AutoMCP server."""
     try:
+        # Resolve config path
         config_path = Path(config).resolve()
         if not config_path.exists():
             typer.echo(f"Config file not found: {config_path}")
@@ -68,7 +55,7 @@ def run(
         # Load configuration
         cfg = load_config(config_path)
 
-        # Handle service config with group selection
+        # Handle group selection
         if isinstance(cfg, ServiceConfig) and group:
             if group not in cfg.groups:
                 typer.echo(f"Group {group} not found in config")
@@ -76,12 +63,50 @@ def run(
             cfg = cfg.groups[group]
 
         # Create and run server
-        server = AutoMCPServer(name=cfg.name, config=cfg, timeout=timeout)
+        async def run_server():
+            server = AutoMCPServer(name=cfg.name, config=cfg, timeout=timeout)
+            async with server:
+                await server.start()
 
-        asyncio.run(run_server(server))
+        # Run event loop
+        try:
+            asyncio.run(run_server())
+        except KeyboardInterrupt:
+            typer.echo("\nServer stopped")
+        except Exception as e:
+            if debug:
+                typer.echo(f"\nFull traceback:\n{traceback.format_exc()}")
+            typer.echo(f"Server error: {str(e)}")
+            raise typer.Exit(1)
 
     except Exception as e:
-        typer.echo(f"Error: {e}")
+        if debug:
+            typer.echo(f"\nFull traceback:\n{traceback.format_exc()}")
+        typer.echo(f"Error: {str(e)}")
+        raise typer.Exit(1)
+
+
+@app.command()
+def validate(
+    config: Annotated[Path, typer.Argument(help="Path to configuration file")],
+) -> None:
+    """Validate configuration file."""
+    try:
+        config_path = Path(config).resolve()
+        if not config_path.exists():
+            typer.echo(f"Config file not found: {config_path}")
+            raise typer.Exit(1)
+
+        cfg = load_config(config_path)
+        typer.echo(f"Configuration valid: {config_path}")
+        typer.echo(f"Type: {'Service' if isinstance(cfg, ServiceConfig) else 'Group'}")
+        typer.echo(f"Name: {cfg.name}")
+
+        if isinstance(cfg, ServiceConfig):
+            typer.echo(f"Groups: {', '.join(cfg.groups.keys())}")
+
+    except Exception as e:
+        typer.echo(f"Configuration invalid: {str(e)}")
         raise typer.Exit(1)
 
 
