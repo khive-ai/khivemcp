@@ -16,8 +16,21 @@ def operation(
         @wraps(func)
         async def wrapper(self, *args, **kwargs):
             if schema:
-                validated_input = schema(**kwargs)
-                return await func(self, validated_input)
+                # Extract schema parameters from kwargs
+                schema_params = {}
+                other_args = []
+                other_kwargs = {}
+
+                for key, value in kwargs.items():
+                    if key in schema.__annotations__:
+                        schema_params[key] = value
+                    else:
+                        other_kwargs[key] = value
+
+                validated_input = schema(**schema_params)
+                return await func(
+                    self, validated_input, *args, *other_args, **other_kwargs
+                )
             return await func(self, *args, **kwargs)
 
         wrapper.is_operation = True

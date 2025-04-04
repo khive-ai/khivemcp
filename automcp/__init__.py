@@ -1,5 +1,6 @@
 from . import types
-from .operation import ServiceGroup, operation
+from .group import ServiceGroup
+from .operation import operation
 from .server import AutoMCPServer
 from .version import __version__
 

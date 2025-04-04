@@ -162,3 +162,7 @@ cython_debug/
 #.idea/
 
 .python-version
+
+dev/
+.roomodes
+*.DS_Store

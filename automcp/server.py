@@ -188,5 +188,9 @@ class AutoMCPServer:
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         """Async context manager exit."""
-        # Cleanup if needed
+        await self.stop()
+
+    async def stop(self):
+        """Stop the server and clean up resources."""
+        # Cleanup resources if needed
         pass
