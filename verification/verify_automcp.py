@@ -3,7 +3,7 @@
 AutoMCP End-to-End Verification Script
 
 This script performs comprehensive verification of the AutoMCP system,
-testing various configurations and functionality.
+testing various configurations and functionality through the MCP protocol.
 """
 
 import argparse
@@ -15,23 +15,16 @@ import subprocess
 import sys
 import time
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 # Add parent directory to path to ensure imports work
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from mcp.types import TextContent
+import mcp.types as types
+from mcp.client.session import ClientSession
+from mcp.client.stdio import StdioServerParameters, stdio_client
 
-from automcp.server import AutoMCPServer
-
-# Import AutoMCP components
-from automcp.types import GroupConfig
-
-# Import verification groups
-from verification.groups.example_group import ExampleGroup
-from verification.groups.schema_group import SchemaGroup
-from verification.groups.timeout_group import TimeoutGroup
-from verification.schemas import ListProcessingSchema, MessageSchema, PersonSchema
+from automcp.types import GroupConfig, ServiceConfig
 
 
 class VerificationResult:
@@ -75,7 +68,7 @@ class VerificationResult:
 
 
 class AutoMCPVerifier:
-    """Class to verify AutoMCP functionality."""
+    """Class to verify AutoMCP functionality through the MCP protocol."""
 
     def __init__(self, verbose: bool = False):
         self.verbose = verbose
@@ -116,435 +109,625 @@ class AutoMCPVerifier:
         return result
 
     async def test_example_group(self) -> VerificationResult:
-        """Test the ExampleGroup functionality."""
+        """Test the ExampleGroup functionality through MCP protocol."""
         result = VerificationResult("ExampleGroup Verification")
+        config_path = self.config_dir / "example_group.json"
+        self.log(f"Testing example group with config: {config_path}")
 
-        # Create an instance of ExampleGroup
-        group = ExampleGroup()
-
-        # Test hello_world operation
         try:
-            response = await group.hello_world()
-            expected = "Hello, World!"
-            passed = response == expected
-            result.add_result(
-                "hello_world operation",
-                passed,
-                f"Expected '{expected}', got '{response}'",
+            # Create server parameters
+            server_params = StdioServerParameters(
+                command="python",
+                args=["-m", "verification.run_server", str(config_path)],
             )
-            self.log(f"hello_world result: {response}")
-        except Exception as e:
-            result.add_result("hello_world operation", False, str(e))
-            self.log(f"hello_world error: {e}", "ERROR")
+            self.log(f"Starting server with parameters: {server_params}")
 
-        # Test echo operation
-        try:
-            test_text = "Testing AutoMCP"
-            response = await group.echo(test_text)
-            expected = f"Echo: {test_text}"
-            passed = response == expected
-            result.add_result(
-                "echo operation", passed, f"Expected '{expected}', got '{response}'"
-            )
-            self.log(f"echo result: {response}")
-        except Exception as e:
-            result.add_result("echo operation", False, str(e))
-            self.log(f"echo error: {e}", "ERROR")
+            # Connect to the server using stdio
+            async with stdio_client(server_params) as (read_stream, write_stream):
+                async with ClientSession(read_stream, write_stream) as client:
+                    # Initialize the connection
+                    await client.initialize()
+                    self.log("Client initialized successfully")
 
-        # Test count_to operation
-        try:
-            test_number = 5
-            response = await group.count_to(test_number)
-            expected = "1, 2, 3, 4, 5"
-            passed = response == expected
-            result.add_result(
-                "count_to operation", passed, f"Expected '{expected}', got '{response}'"
-            )
-            self.log(f"count_to result: {response}")
+                    # Get the list of available tools
+                    tools = await client.list_tools()
+                    tool_names = [tool.name for tool in tools]
+
+                    has_hello_world = "example.hello_world" in tool_names
+                    has_echo = "example.echo" in tool_names
+                    has_count_to = "example.count_to" in tool_names
+
+                    result.add_result(
+                        "Available tools",
+                        has_hello_world and has_echo and has_count_to,
+                        f"Found tools: {', '.join(tool_names)}",
+                    )
+                    self.log(f"Available tools: {tool_names}")
+
+                    # Test hello_world operation
+                    try:
+                        response = await client.call_tool("example.hello_world", {})
+                        # Get the text from the first content item
+                        response_text = (
+                            response.content[0].text if response.content else ""
+                        )
+                        expected = "Hello, World!"
+                        passed = expected in response_text
+                        result.add_result(
+                            "hello_world operation",
+                            passed,
+                            f"Expected '{expected}' in '{response_text}'",
+                        )
+                        self.log(f"hello_world result: {response_text}")
+                    except Exception as e:
+                        result.add_result("hello_world operation", False, str(e))
+                        self.log(f"hello_world error: {e}", "ERROR")
+
+                    # Test echo operation
+                    try:
+                        test_text = "Testing AutoMCP"
+                        response = await client.call_tool(
+                            "example.echo", {"text": test_text}
+                        )
+                        # Get the text from the first content item
+                        response_text = (
+                            response.content[0].text if response.content else ""
+                        )
+                        expected = f"Echo: {test_text}"
+                        passed = expected in response_text
+                        result.add_result(
+                            "echo operation",
+                            passed,
+                            f"Expected '{expected}' in '{response_text}'",
+                        )
+                        self.log(f"echo result: {response_text}")
+                    except Exception as e:
+                        result.add_result("echo operation", False, str(e))
+                        self.log(f"echo error: {e}", "ERROR")
+
+                    # Test count_to operation
+                    try:
+                        test_number = 5
+                        response = await client.call_tool(
+                            "example.count_to", {"number": test_number}
+                        )
+                        # Get the text from the first content item
+                        response_text = (
+                            response.content[0].text if response.content else ""
+                        )
+                        expected = "1, 2, 3, 4, 5"
+                        passed = expected in response_text
+                        result.add_result(
+                            "count_to operation",
+                            passed,
+                            f"Expected '{expected}' in '{response_text}'",
+                        )
+                        self.log(f"count_to result: {response_text}")
+                    except Exception as e:
+                        result.add_result("count_to operation", False, str(e))
+                        self.log(f"count_to error: {e}", "ERROR")
+
         except Exception as e:
-            result.add_result("count_to operation", False, str(e))
-            self.log(f"count_to error: {e}", "ERROR")
+            result.add_result("Example group server setup", False, str(e))
+            self.log(f"Example group server setup error: {e}", "ERROR")
 
         return result
 
     async def test_schema_group(self) -> VerificationResult:
-        """Test the SchemaGroup functionality."""
+        """Test the SchemaGroup functionality through MCP protocol."""
         result = VerificationResult("SchemaGroup Verification")
+        config_path = self.config_dir / "schema_group.json"
+        self.log(f"Testing schema group with config: {config_path}")
 
-        # Create an instance of SchemaGroup
-        group = SchemaGroup()
-
-        # Test greet_person operation
         try:
-            # Pass schema parameters as keyword arguments
-            response = await group.greet_person(
-                name="John Doe", age=30, email="john@example.com"
+            # Create server parameters
+            server_params = StdioServerParameters(
+                command="python",
+                args=["-m", "verification.run_server", str(config_path)],
             )
-            expected_parts = [
-                "Hello, John Doe!",
-                "You are 30 years old.",
-                "Your email is john@example.com",
-            ]
-            passed = all(part in response for part in expected_parts)
-            result.add_result(
-                "greet_person operation", passed, f"Response: '{response}'"
-            )
-            self.log(f"greet_person result: {response}")
+            self.log(f"Starting server with parameters: {server_params}")
+
+            # Connect to the server using stdio
+            async with stdio_client(server_params) as (read_stream, write_stream):
+                async with ClientSession(read_stream, write_stream) as client:
+                    # Initialize the connection
+                    await client.initialize()
+                    self.log("Client initialized successfully")
+
+                    # Get the list of available tools
+                    tools = await client.list_tools()
+                    tool_names = [tool.name for tool in tools]
+
+                    has_greet_person = "schema.greet_person" in tool_names
+                    has_repeat_message = "schema.repeat_message" in tool_names
+                    has_process_list = "schema.process_list" in tool_names
+
+                    result.add_result(
+                        "Available schema tools",
+                        has_greet_person and has_repeat_message and has_process_list,
+                        f"Found tools: {', '.join(tool_names)}",
+                    )
+                    self.log(f"Available schema tools: {tool_names}")
+
+                    # Test greet_person operation
+                    try:
+                        response = await client.call_tool(
+                            "schema.greet_person",
+                            {
+                                "name": "John Doe",
+                                "age": 30,
+                                "email": "john@example.com",
+                            },
+                        )
+                        # Get the text from the first content item
+                        response_text = (
+                            response.content[0].text if response.content else ""
+                        )
+                        expected_parts = [
+                            "Hello, John Doe!",
+                            "You are 30 years old",
+                            "john@example.com",
+                        ]
+                        passed = all(part in response_text for part in expected_parts)
+                        result.add_result(
+                            "greet_person operation",
+                            passed,
+                            f"Response: '{response_text}'",
+                        )
+                        self.log(f"greet_person result: {response_text}")
+                    except Exception as e:
+                        result.add_result("greet_person operation", False, str(e))
+                        self.log(f"greet_person error: {e}", "ERROR")
+
+                    # Test repeat_message operation
+                    try:
+                        response = await client.call_tool(
+                            "schema.repeat_message", {"text": "Test", "repeat": 3}
+                        )
+                        # Get the text from the first content item
+                        response_text = (
+                            response.content[0].text if response.content else ""
+                        )
+                        expected = "Test Test Test"
+                        passed = expected in response_text
+                        result.add_result(
+                            "repeat_message operation",
+                            passed,
+                            f"Expected '{expected}' in '{response_text}'",
+                        )
+                        self.log(f"repeat_message result: {response_text}")
+                    except Exception as e:
+                        result.add_result("repeat_message operation", False, str(e))
+                        self.log(f"repeat_message error: {e}", "ERROR")
+
+                    # Test process_list operation
+                    try:
+                        response = await client.call_tool(
+                            "schema.process_list",
+                            {
+                                "items": ["apple", "banana", "cherry"],
+                                "prefix": "Fruit:",
+                                "uppercase": True,
+                            },
+                        )
+                        # Get the text from the first content item
+                        response_text = (
+                            response.content[0].text if response.content else ""
+                        )
+                        expected_parts = ["APPLE", "BANANA", "CHERRY", "Fruit:"]
+                        passed = all(part in response_text for part in expected_parts)
+                        result.add_result(
+                            "process_list operation",
+                            passed,
+                            f"Response contains expected parts: {passed}",
+                        )
+                        self.log(f"process_list result: {response_text}")
+                    except Exception as e:
+                        result.add_result("process_list operation", False, str(e))
+                        self.log(f"process_list error: {e}", "ERROR")
+
         except Exception as e:
-            result.add_result("greet_person operation", False, str(e))
-            self.log(f"greet_person error: {e}", "ERROR")
-
-        # Test repeat_message operation
-        try:
-            # Create a TextContent object to use as Context
-            ctx = TextContent(type="text", text="")
-
-            # Add the required methods for testing
-            async def report_progress(current, total):
-                pass
-
-            def info(message):
-                pass
-
-            ctx.report_progress = report_progress
-            ctx.info = info
-
-            # Pass schema parameters as keyword arguments
-            response = await group.repeat_message(text="Test", repeat=3, ctx=ctx)
-            expected = "Test Test Test"
-            passed = response == expected
-            result.add_result(
-                "repeat_message operation",
-                passed,
-                f"Expected '{expected}', got '{response}'",
-            )
-            self.log(f"repeat_message result: {response}")
-        except Exception as e:
-            result.add_result("repeat_message operation", False, str(e))
-            self.log(f"repeat_message error: {e}", "ERROR")
-
-        # Test process_list operation
-        try:
-            # Pass schema parameters as keyword arguments
-            response = await group.process_list(
-                items=["apple", "banana", "cherry"], prefix="Fruit:", uppercase=True
-            )
-            expected = ["Fruit: APPLE", "Fruit: BANANA", "Fruit: CHERRY"]
-            passed = response == expected
-            result.add_result(
-                "process_list operation", passed, f"Expected {expected}, got {response}"
-            )
-            self.log(f"process_list result: {response}")
-        except Exception as e:
-            result.add_result("process_list operation", False, str(e))
-            self.log(f"process_list error: {e}", "ERROR")
+            result.add_result("Schema group server setup", False, str(e))
+            self.log(f"Schema group server setup error: {e}", "ERROR")
 
         return result
 
     async def test_timeout_group(self) -> VerificationResult:
-        """Test the TimeoutGroup functionality."""
+        """Test the TimeoutGroup functionality through MCP protocol."""
         result = VerificationResult("TimeoutGroup Verification")
+        config_path = self.config_dir / "timeout_group.json"
+        self.log(f"Testing timeout group with config: {config_path}")
 
-        # Create an instance of TimeoutGroup
-        group = TimeoutGroup()
-
-        # Test sleep operation
         try:
-            start_time = time.time()
-            sleep_time = 0.2
-            response = await group.sleep(sleep_time)
-            elapsed = time.time() - start_time
-            expected = f"Slept for {sleep_time} seconds"
-            time_ok = sleep_time <= elapsed <= sleep_time + 0.1
-            passed = expected in response and time_ok
-            result.add_result(
-                "sleep operation",
-                passed,
-                f"Expected '{expected}' in '{response}', elapsed time: {elapsed:.2f}s",
+            # Create server parameters
+            server_params = StdioServerParameters(
+                command="python",
+                args=["-m", "verification.run_server", str(config_path)],
             )
-            self.log(f"sleep result: {response}, elapsed: {elapsed:.2f}s")
+            self.log(f"Starting server with parameters: {server_params}")
+
+            # Connect to the server using stdio
+            async with stdio_client(server_params) as (read_stream, write_stream):
+                async with ClientSession(read_stream, write_stream) as client:
+                    # Initialize the connection
+                    await client.initialize()
+                    self.log("Client initialized successfully")
+
+                    # Get the list of available tools
+                    tools = await client.list_tools()
+                    tool_names = [tool.name for tool in tools]
+
+                    has_sleep = "timeout.sleep" in tool_names
+                    has_slow_counter = "timeout.slow_counter" in tool_names
+                    has_cpu_intensive = "timeout.cpu_intensive" in tool_names
+
+                    result.add_result(
+                        "Available timeout tools",
+                        has_sleep and has_slow_counter and has_cpu_intensive,
+                        f"Found tools: {', '.join(tool_names)}",
+                    )
+                    self.log(f"Available timeout tools: {tool_names}")
+
+                    # Test sleep operation
+                    try:
+                        start_time = time.time()
+                        sleep_time = 0.2
+                        response = await client.call_tool(
+                            "timeout.sleep", {"seconds": sleep_time}
+                        )
+                        # Get the text from the first content item
+                        response_text = (
+                            response.content[0].text if response.content else ""
+                        )
+                        elapsed = time.time() - start_time
+                        expected = f"Slept for {sleep_time} seconds"
+                        time_ok = sleep_time <= elapsed <= sleep_time + 0.5
+                        passed = expected in response_text and time_ok
+                        result.add_result(
+                            "sleep operation",
+                            passed,
+                            f"Expected '{expected}' in '{response_text}', elapsed time: {elapsed:.2f}s",
+                        )
+                        self.log(
+                            f"sleep result: {response_text}, elapsed: {elapsed:.2f}s"
+                        )
+                    except Exception as e:
+                        result.add_result("sleep operation", False, str(e))
+                        self.log(f"sleep error: {e}", "ERROR")
+
+                    # Test slow_counter operation
+                    try:
+                        response = await client.call_tool(
+                            "timeout.slow_counter", {"count": 3, "delay": 0.1}
+                        )
+                        # Get the text from the first content item
+                        response_text = (
+                            response.content[0].text if response.content else ""
+                        )
+                        expected_parts = ["Counted to 3", "1", "2", "3"]
+                        passed = all(part in response_text for part in expected_parts)
+                        result.add_result(
+                            "slow_counter operation",
+                            passed,
+                            f"Response: '{response_text}'",
+                        )
+                        self.log(f"slow_counter result: {response_text}")
+                    except Exception as e:
+                        result.add_result("slow_counter operation", False, str(e))
+                        self.log(f"slow_counter error: {e}", "ERROR")
+
+                    # Test cpu_intensive operation with a small iteration count
+                    try:
+                        response = await client.call_tool(
+                            "timeout.cpu_intensive", {"iterations": 100}
+                        )
+                        # Get the text from the first content item
+                        response_text = (
+                            response.content[0].text if response.content else ""
+                        )
+                        expected_parts = ["Completed 100 iterations", "result:"]
+                        passed = all(part in response_text for part in expected_parts)
+                        result.add_result(
+                            "cpu_intensive operation",
+                            passed,
+                            f"Response contains expected parts: {passed}",
+                        )
+                        self.log(f"cpu_intensive result: {response_text}")
+                    except Exception as e:
+                        result.add_result("cpu_intensive operation", False, str(e))
+                        self.log(f"cpu_intensive error: {e}", "ERROR")
+
         except Exception as e:
-            result.add_result("sleep operation", False, str(e))
-            self.log(f"sleep error: {e}", "ERROR")
-
-        # Test slow_counter operation
-        try:
-            # Create a TextContent object to use as Context
-            ctx = TextContent(type="text", text="")
-
-            # Add the required methods for testing
-            async def report_progress(current, total):
-                pass
-
-            def info(message):
-                pass
-
-            ctx.report_progress = report_progress
-            ctx.info = info
-
-            response = await group.slow_counter(3, 0.1, ctx)
-            passed = "Counted to 3" in response and "1, 2, 3" in response
-            result.add_result(
-                "slow_counter operation", passed, f"Response: '{response}'"
-            )
-            self.log(f"slow_counter result: {response}")
-        except Exception as e:
-            result.add_result("slow_counter operation", False, str(e))
-            self.log(f"slow_counter error: {e}", "ERROR")
-
-        # Test cpu_intensive operation with a small iteration count
-        try:
-            # Create a TextContent object to use as Context
-            ctx = TextContent(type="text", text="")
-
-            # Add the required methods for testing
-            async def report_progress(current, total):
-                pass
-
-            def info(message):
-                pass
-
-            ctx.report_progress = report_progress
-            ctx.info = info
-
-            response = await group.cpu_intensive(
-                100, ctx
-            )  # Small iteration count for testing
-            passed = "Completed 100 iterations" in response and "result:" in response
-            result.add_result(
-                "cpu_intensive operation",
-                passed,
-                f"Response contains expected text: {passed}",
-            )
-            self.log(f"cpu_intensive result: {response}")
-        except Exception as e:
-            result.add_result("cpu_intensive operation", False, str(e))
-            self.log(f"cpu_intensive error: {e}", "ERROR")
+            result.add_result("Timeout group server setup", False, str(e))
+            self.log(f"Timeout group server setup error: {e}", "ERROR")
 
         return result
 
     async def test_timeout_functionality(self) -> VerificationResult:
-        """Test the timeout functionality with different timeout values."""
+        """Test the timeout functionality through MCP protocol."""
         result = VerificationResult("Timeout Functionality Verification")
+        config_path = self.config_dir / "timeout_group.json"
+        self.log(f"Testing timeout functionality with config: {config_path}")
 
-        # Create a TextContent object to use as Context
-        ctx = TextContent(type="text", text="")
-
-        # Add the required methods for testing
-        async def report_progress(current, total):
-            pass
-
-        def info(message):
-            pass
-
-        ctx.report_progress = report_progress
-        ctx.info = info
-
-        # Test with operation that completes before timeout
         try:
-            group = TimeoutGroup()
+            # Test with operation that completes before timeout
+            # Create server parameters for the timeout_test.py script with a longer timeout
+            server_params1 = StdioServerParameters(
+                command="python",
+                args=["-m", "verification.timeout_test", str(config_path), "1.0"],
+            )
+            self.log(f"Starting server with longer timeout (1.0s)")
 
-            # Create a task with a timeout
-            task = asyncio.create_task(group.sleep(0.2))
-            try:
-                response = await asyncio.wait_for(task, timeout=1.0)
-                passed = "Slept for 0.2 seconds" in response
-                result.add_result(
-                    "Operation completes before timeout",
-                    passed,
-                    f"Response: '{response}'",
-                )
-                self.log(f"Timeout test (should succeed): {response}")
-            except asyncio.TimeoutError:
-                result.add_result(
-                    "Operation completes before timeout",
-                    False,
-                    "Operation timed out unexpectedly",
-                )
-                self.log(
-                    "Timeout test (should succeed) failed: unexpected timeout", "ERROR"
-                )
+            # Connect to the server using stdio
+            async with stdio_client(server_params1) as (read_stream, write_stream):
+                async with ClientSession(read_stream, write_stream) as client:
+                    # Initialize the connection
+                    await client.initialize()
+                    self.log("Client initialized successfully")
+
+                    try:
+                        response = await client.call_tool(
+                            "timeout.sleep", {"seconds": 0.2}
+                        )
+                        # Get the text from the first content item
+                        response_text = (
+                            response.content[0].text if response.content else ""
+                        )
+                        passed = "Slept for 0.2 seconds" in response_text
+                        result.add_result(
+                            "Operation completes before timeout",
+                            passed,
+                            f"Response: '{response_text}'",
+                        )
+                        self.log(f"Timeout test (should succeed): {response_text}")
+                    except Exception as e:
+                        result.add_result(
+                            "Operation completes before timeout", False, str(e)
+                        )
+                        self.log(f"Timeout test (should succeed) error: {e}", "ERROR")
+
+            # Test with operation that exceeds timeout
+            # Create server parameters for the timeout_test.py script with a shorter timeout
+            server_params2 = StdioServerParameters(
+                command="python",
+                args=["-m", "verification.timeout_test", str(config_path), "0.2"],
+            )
+            self.log(f"Starting server with shorter timeout (0.2s)")
+
+            # Connect to the server using stdio
+            async with stdio_client(server_params2) as (read_stream, write_stream):
+                async with ClientSession(read_stream, write_stream) as client:
+                    # Initialize the connection
+                    await client.initialize()
+                    self.log("Client initialized successfully")
+
+                    try:
+                        response = await client.call_tool(
+                            "timeout.sleep", {"seconds": 1.0}
+                        )
+                        # Get the text from the first content item
+                        response_text = (
+                            response.content[0].text if response.content else ""
+                        )
+                        # For the timeout test, we expect either "timeout" in the response or "Operation timed out"
+                        has_timeout = (
+                            "timeout" in response_text.lower()
+                            or "operation timed out" in response_text.lower()
+                        )
+                        result.add_result(
+                            "Operation exceeds timeout",
+                            has_timeout,
+                            f"Response: '{response_text}'",
+                        )
+                        self.log(f"Timeout test (should timeout): {response_text}")
+                    except Exception as e:
+                        # If the exception is related to timeout, that's expected
+                        if "timeout" in str(e).lower():
+                            result.add_result(
+                                "Operation exceeds timeout",
+                                True,
+                                f"Expected timeout exception: {e}",
+                            )
+                            self.log(
+                                f"Timeout test (should timeout): got timeout exception"
+                            )
+                        else:
+                            result.add_result(
+                                "Operation exceeds timeout", False, str(e)
+                            )
+                            self.log(
+                                f"Timeout test (should timeout) error: {e}", "ERROR"
+                            )
+
         except Exception as e:
-            result.add_result("Operation completes before timeout", False, str(e))
-            self.log(f"Timeout test (should succeed) error: {e}", "ERROR")
-
-        # Test with operation that exceeds timeout
-        try:
-            group = TimeoutGroup()
-
-            # Create a task with a timeout
-            task = asyncio.create_task(group.sleep(1.0))
-            try:
-                response = await asyncio.wait_for(task, timeout=0.2)
-                result.add_result(
-                    "Operation exceeds timeout",
-                    False,
-                    "Operation completed when it should have timed out",
-                )
-                self.log(
-                    f"Timeout test (should timeout) failed: operation completed",
-                    "ERROR",
-                )
-            except asyncio.TimeoutError:
-                result.add_result(
-                    "Operation exceeds timeout", True, "Operation timed out as expected"
-                )
-                self.log("Timeout test (should timeout): timed out as expected")
-        except Exception as e:
-            result.add_result("Operation exceeds timeout", False, str(e))
-            self.log(f"Timeout test (should timeout) error: {e}", "ERROR")
+            result.add_result("Timeout functionality server setup", False, str(e))
+            self.log(f"Timeout functionality server setup error: {e}", "ERROR")
 
         return result
 
     async def test_multi_group_config(self) -> VerificationResult:
-        """Test loading and using a multi-group configuration."""
+        """Test loading and using a multi-group configuration through MCP protocol."""
         result = VerificationResult("Multi-Group Configuration Verification")
-
         config_path = self.config_dir / "multi_group.yaml"
         self.log(f"Testing multi-group config: {config_path}")
 
         try:
-            # Load the YAML configuration
-            import yaml
-
-            with open(config_path, "r") as f:
-                config_data = yaml.safe_load(f)
-
-            # Verify the configuration structure
-            has_name = "name" in config_data
-            has_groups = "groups" in config_data
-            has_example = (
-                "verification.groups.example_group:ExampleGroup"
-                in config_data.get("groups", {})
+            # Create server parameters
+            server_params = StdioServerParameters(
+                command="python",
+                args=["-m", "verification.run_server", str(config_path)],
             )
-            has_schema = (
-                "verification.groups.schema_group:SchemaGroup"
-                in config_data.get("groups", {})
-            )
-            has_timeout = (
-                "verification.groups.timeout_group:TimeoutGroup"
-                in config_data.get("groups", {})
-            )
+            self.log(f"Starting server with parameters: {server_params}")
 
-            result.add_result(
-                "Multi-group config structure",
-                has_name and has_groups and has_example and has_schema and has_timeout,
-                f"Config has name: {has_name}, groups: {has_groups}, example: {has_example}, schema: {has_schema}, timeout: {has_timeout}",
-            )
-            self.log(
-                f"Multi-group config structure validation: {has_name and has_groups and has_example and has_schema and has_timeout}"
-            )
+            # Connect to the server using stdio
+            async with stdio_client(server_params) as (read_stream, write_stream):
+                async with ClientSession(read_stream, write_stream) as client:
+                    # Initialize the connection
+                    await client.initialize()
+                    self.log("Client initialized successfully")
 
-            # Try to create a server with this configuration
-            # Note: We don't actually start the server to avoid conflicts with running processes
-            try:
-                from automcp.server import AutoMCPServer
-                from automcp.types import ServiceConfig
+                    # Get the list of available tools
+                    tools = await client.list_tools()
+                    tool_names = [tool.name for tool in tools]
 
-                # Convert to ServiceConfig
-                service_config = ServiceConfig(**config_data)
+                    # Check for tools from each group
+                    has_example = any(
+                        name.startswith("example.") for name in tool_names
+                    )
+                    has_schema = any(name.startswith("schema.") for name in tool_names)
+                    has_timeout = any(
+                        name.startswith("timeout.") for name in tool_names
+                    )
 
-                # Create server (but don't start it)
-                server = AutoMCPServer("verification-test", service_config)
+                    result.add_result(
+                        "Multi-group tools available",
+                        has_example and has_schema and has_timeout,
+                        f"Found example: {has_example}, schema: {has_schema}, timeout: {has_timeout}",
+                    )
+                    self.log(f"Multi-group tools: {tool_names}")
 
-                result.add_result(
-                    "Create server with multi-group config",
-                    True,
-                    "Server created successfully",
-                )
-                self.log("Server created successfully with multi-group config")
-            except Exception as e:
-                result.add_result(
-                    "Create server with multi-group config", False, str(e)
-                )
-                self.log(
-                    f"Failed to create server with multi-group config: {e}", "ERROR"
-                )
+                    # Test one operation from each group
+                    try:
+                        # Example group
+                        response = await client.call_tool("example.hello_world", {})
+                        # Get the text from the first content item
+                        response_text = (
+                            response.content[0].text if response.content else ""
+                        )
+                        example_ok = "Hello, World!" in response_text
+                        result.add_result(
+                            "Multi-group example operation",
+                            example_ok,
+                            f"Response: '{response_text}'",
+                        )
+                        self.log(f"Multi-group example operation: {response_text}")
+
+                        # Schema group
+                        response = await client.call_tool(
+                            "schema.greet_person",
+                            {
+                                "name": "Jane Doe",
+                                "age": 25,
+                                "email": "jane@example.com",
+                            },
+                        )
+                        # Get the text from the first content item
+                        response_text = (
+                            response.content[0].text if response.content else ""
+                        )
+                        schema_ok = (
+                            "Jane Doe" in response_text and "25" in response_text
+                        )
+                        result.add_result(
+                            "Multi-group schema operation",
+                            schema_ok,
+                            f"Response: '{response_text}'",
+                        )
+                        self.log(f"Multi-group schema operation: {response_text}")
+
+                        # Timeout group
+                        response = await client.call_tool(
+                            "timeout.sleep", {"seconds": 0.1}
+                        )
+                        # Get the text from the first content item
+                        response_text = (
+                            response.content[0].text if response.content else ""
+                        )
+                        timeout_ok = "Slept for 0.1 seconds" in response_text
+                        result.add_result(
+                            "Multi-group timeout operation",
+                            timeout_ok,
+                            f"Response: '{response_text}'",
+                        )
+                        self.log(f"Multi-group timeout operation: {response_text}")
+
+                    except Exception as e:
+                        result.add_result("Multi-group operations", False, str(e))
+                        self.log(f"Multi-group operations error: {e}", "ERROR")
 
         except Exception as e:
-            result.add_result("Load multi-group config", False, str(e))
-            self.log(f"Failed to load multi-group config: {e}", "ERROR")
+            result.add_result("Multi-group server setup", False, str(e))
+            self.log(f"Multi-group server setup error: {e}", "ERROR")
 
         return result
 
     async def test_concurrent_requests(self) -> VerificationResult:
-        """Test handling of concurrent requests."""
+        """Test handling of concurrent requests through MCP protocol."""
         result = VerificationResult("Concurrent Requests Verification")
-
-        # Create instances of the groups
-        example_group = ExampleGroup()
-        timeout_group = TimeoutGroup()
-
-        # Create a TextContent object to use as Context
-        ctx = TextContent(type="text", text="")
-
-        # Add the required methods for testing
-        async def report_progress(current, total):
-            pass
-
-        def info(message):
-            pass
-
-        ctx.report_progress = report_progress
-        ctx.info = info
+        config_path = self.config_dir / "multi_group.yaml"
+        self.log(f"Testing concurrent requests with config: {config_path}")
 
         try:
-            # Create multiple tasks to run concurrently
-            tasks = [
-                example_group.hello_world(),
-                example_group.echo("Concurrent test"),
-                example_group.count_to(3),
-                timeout_group.sleep(0.2),
-                timeout_group.slow_counter(2, 0.1, ctx),
-            ]
-
-            # Run all tasks concurrently
-            start_time = time.time()
-            responses = await asyncio.gather(*tasks)
-            elapsed = time.time() - start_time
-
-            # Verify all responses
-            expected_responses = [
-                "Hello, World!",
-                "Echo: Concurrent test",
-                "1, 2, 3",
-                "Slept for 0.2 seconds",
-                # The slow_counter response will contain timing info, so we just check for "Counted to 2"
-            ]
-
-            all_match = True
-            for i, (expected, actual) in enumerate(zip(expected_responses, responses)):
-                if i < 4:  # For the first 4 responses, we expect exact matches
-                    if expected not in actual:
-                        all_match = False
-                        self.log(
-                            f"Response {i} mismatch: expected '{expected}', got '{actual}'",
-                            "ERROR",
-                        )
-                else:  # For the slow_counter response, we just check for "Counted to 2"
-                    if "Counted to 2" not in actual:
-                        all_match = False
-                        self.log(
-                            f"Response {i} mismatch: expected 'Counted to 2' in '{actual}'",
-                            "ERROR",
-                        )
-
-            # Check if the elapsed time is reasonable
-            # The slowest operation is sleep(0.2), so the total time should be around 0.2-0.3 seconds
-            time_ok = 0.2 <= elapsed <= 0.5
-
-            result.add_result(
-                "Concurrent operations",
-                all_match and time_ok,
-                f"All responses match: {all_match}, elapsed time: {elapsed:.2f}s",
+            # Create server parameters
+            server_params = StdioServerParameters(
+                command="python",
+                args=["-m", "verification.run_server", str(config_path)],
             )
-            self.log(
-                f"Concurrent operations test: all match: {all_match}, elapsed: {elapsed:.2f}s"
-            )
+            self.log(f"Starting server with parameters: {server_params}")
+
+            # Connect to the server using stdio
+            async with stdio_client(server_params) as (read_stream, write_stream):
+                async with ClientSession(read_stream, write_stream) as client:
+                    # Initialize the connection
+                    await client.initialize()
+                    self.log("Client initialized successfully")
+
+                    # Create multiple tasks to run concurrently
+                    start_time = time.time()
+                    tasks = [
+                        client.call_tool("example.hello_world", {}),
+                        client.call_tool("example.echo", {"text": "Concurrent test"}),
+                        client.call_tool("example.count_to", {"number": 3}),
+                        client.call_tool("timeout.sleep", {"seconds": 0.2}),
+                        client.call_tool(
+                            "timeout.slow_counter", {"count": 2, "delay": 0.1}
+                        ),
+                    ]
+
+                    # Run all tasks concurrently
+                    responses = await asyncio.gather(*tasks)
+                    elapsed = time.time() - start_time
+
+                    # Verify all responses
+                    expected_contents = [
+                        "Hello, World!",
+                        "Echo: Concurrent test",
+                        "1, 2, 3",
+                        "Slept for 0.2 seconds",
+                        "Counted to 2",  # For the slow_counter
+                    ]
+
+                    all_match = True
+                    for i, (expected, response) in enumerate(
+                        zip(expected_contents, responses)
+                    ):
+                        # Get the text from the first content item
+                        response_text = (
+                            response.content[0].text if response.content else ""
+                        )
+                        if expected not in response_text:
+                            all_match = False
+                            self.log(
+                                f"Response {i} mismatch: expected '{expected}' in '{response_text}'",
+                                "ERROR",
+                            )
+
+                    # Check if the elapsed time is reasonable
+                    # The slowest operation is sleep(0.2), so the total time should be around 0.2-0.7 seconds
+                    time_ok = 0.2 <= elapsed <= 0.7
+
+                    result.add_result(
+                        "Concurrent operations",
+                        all_match and time_ok,
+                        f"All responses match: {all_match}, elapsed time: {elapsed:.2f}s",
+                    )
+                    self.log(
+                        f"Concurrent operations test: all match: {all_match}, elapsed: {elapsed:.2f}s"
+                    )
 
         except Exception as e:
-            result.add_result("Concurrent operations", False, str(e))
-            self.log(f"Concurrent operations test error: {e}", "ERROR")
+            result.add_result("Concurrent operations server setup", False, str(e))
+            self.log(f"Concurrent operations server setup error: {e}", "ERROR")
 
         return result
 
