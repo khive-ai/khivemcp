@@ -1,15 +1,14 @@
 """AutoMCP CLI tools."""
 
 import asyncio
-import json
 from pathlib import Path
 from typing import Annotated
 
 import typer
-import yaml
 
 from .server import AutoMCPServer
 from .types import GroupConfig, ServiceConfig
+from .utils import load_config
 
 app = typer.Typer(
     name="automcp",
@@ -17,22 +16,6 @@ app = typer.Typer(
     add_completion=False,
     no_args_is_help=True,
 )
-
-
-def load_config(path: Path) -> ServiceConfig | GroupConfig:
-    """Load configuration from file."""
-    try:
-        if path.suffix in [".yaml", ".yml"]:
-            with open(path) as f:
-                data = yaml.safe_load(f)
-            return ServiceConfig(**data)
-        else:
-            with open(path) as f:
-                data = json.load(f)
-            return GroupConfig(**data)
-    except Exception as e:
-        typer.echo(f"Failed to load config: {e}")
-        raise typer.Exit(1)
 
 
 async def run_server(server: AutoMCPServer) -> None:
@@ -61,12 +44,16 @@ def run(
     """Run AutoMCP server."""
     try:
         config_path = Path(config).resolve()
-        if not config_path.exists():
-            typer.echo(f"Config file not found: {config_path}")
-            raise typer.Exit(1)
 
         # Load configuration
-        cfg = load_config(config_path)
+        try:
+            cfg = load_config(config_path)
+        except FileNotFoundError:
+            typer.echo(f"Config file not found: {config_path}")
+            raise typer.Exit(1)
+        except ValueError as e:
+            typer.echo(f"Failed to load config: {e}")
+            raise typer.Exit(1)
 
         # Handle service config with group selection
         if isinstance(cfg, ServiceConfig) and group:
