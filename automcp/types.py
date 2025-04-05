@@ -41,8 +41,8 @@ class ServiceConfig(BaseModel):
 class ExecutionRequest(BaseModel):
     """Request model for operation execution."""
 
-    _id: str = PrivateAttr(default_factory=uuid4)
-    _created_at: datetime = PrivateAttr(default_factory=datetime.now(UTC))
+    _id: str = PrivateAttr(default_factory=lambda: str(uuid4()))
+    _created_at: datetime = PrivateAttr(default_factory=lambda: datetime.now(UTC))
     operation: str = Field(..., description="Operation name to execute")
     arguments: dict[str, Any] | None = Field(None, description="Operation arguments")
 
@@ -50,9 +50,9 @@ class ExecutionRequest(BaseModel):
 class ExecutionResponse(BaseModel):
     """Response model for operation execution."""
 
-    _id: str = PrivateAttr(default_factory=uuid4)
-    _request_id: str = PrivateAttr()
-    _created_at: datetime = PrivateAttr(default_factory=datetime.now(UTC))
+    _id: str = PrivateAttr(default_factory=lambda: str(uuid4()))
+    _request_id: str = PrivateAttr(default="")
+    _created_at: datetime = PrivateAttr(default_factory=lambda: datetime.now(UTC))
     content: types.TextContent = Field(..., description="Operation result content")
     error: str | None = Field(None, description="Error message if execution failed")
 
