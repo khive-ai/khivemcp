@@ -24,5 +24,9 @@ class ListProcessingSchema(BaseModel):
     """Schema for processing a list of items."""
 
     items: List[str] = Field(..., description="List of items to process")
-    prefix: Optional[str] = Field("Item:", description="Prefix to add to each item")
-    uppercase: bool = Field(False, description="Whether to convert items to uppercase")
+    prefix: Optional[str] = Field(
+        "Item:", description="Prefix to add to each item"
+    )
+    uppercase: bool = Field(
+        False, description="Whether to convert items to uppercase"
+    )

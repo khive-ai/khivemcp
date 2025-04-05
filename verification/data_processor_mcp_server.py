@@ -28,10 +28,15 @@ os.environ["AUTOMCP_SERVER_MODE"] = "stdio"
 async def main():
     """Run the DataProcessorGroup server with stdio MCP protocol."""
     # Get the path to the data_processor_group.json config
-    config_path = Path(__file__).parent / "config" / "data_processor_group.json"
+    config_path = (
+        Path(__file__).parent / "config" / "data_processor_group.json"
+    )
 
     if not config_path.exists():
-        print(f"Error: Configuration file {config_path} not found", file=sys.stderr)
+        print(
+            f"Error: Configuration file {config_path} not found",
+            file=sys.stderr,
+        )
         sys.exit(1)
 
     # Load the configuration from the file

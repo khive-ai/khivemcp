@@ -17,7 +17,9 @@ from verification.groups.timeout_group import TimeoutGroup
 @pytest.mark.asyncio
 async def test_load_single_group_from_json():
     """Test that AutoMCPServer can load a single group from JSON config."""
-    config_path = Path(__file__).parent.parent / "config" / "example_group.json"
+    config_path = (
+        Path(__file__).parent.parent / "config" / "example_group.json"
+    )
 
     # Load the JSON file
     with open(config_path, "r") as f:
@@ -91,7 +93,11 @@ async def test_load_multi_group_from_yaml():
         requests=[
             ExecutionRequest(
                 operation="greet_person",
-                arguments={"name": "Test User", "age": 30, "email": "test@example.com"},
+                arguments={
+                    "name": "Test User",
+                    "age": 30,
+                    "email": "test@example.com",
+                },
             )
         ]
     )
@@ -100,7 +106,9 @@ async def test_load_multi_group_from_yaml():
 
     # Test timeout group
     request = ServiceRequest(
-        requests=[ExecutionRequest(operation="sleep", arguments={"seconds": 0.1})]
+        requests=[
+            ExecutionRequest(operation="sleep", arguments={"seconds": 0.1})
+        ]
     )
     result = await server._handle_service_request("timeout", request)
     assert "Slept for 0.1 seconds" in result.content.text
@@ -142,7 +150,11 @@ async def test_load_specific_group_from_yaml():
         requests=[
             ExecutionRequest(
                 operation="greet_person",
-                arguments={"name": "Test User", "age": 30, "email": "test@example.com"},
+                arguments={
+                    "name": "Test User",
+                    "age": 30,
+                    "email": "test@example.com",
+                },
             )
         ]
     )

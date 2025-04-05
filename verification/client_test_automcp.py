@@ -85,9 +85,13 @@ async def process_data_example(client: ClientSession) -> Dict[str, Any]:
 
     console.print("[bold]Input data:[/bold]")
     console.print(f"  - {len(test_data['data'])} items to process")
-    console.print(f"  - Transformation: {test_data['parameters']['transform_case']}")
+    console.print(
+        f"  - Transformation: {test_data['parameters']['transform_case']}"
+    )
     console.print(f"  - Aggregation: {test_data['parameters']['aggregate']}")
-    console.print(f"  - Filter fields: {test_data['parameters']['filter_fields']}")
+    console.print(
+        f"  - Filter fields: {test_data['parameters']['filter_fields']}"
+    )
 
     # Call the operation
     console.print("[cyan]Processing data...[/cyan]")
@@ -129,14 +133,18 @@ async def generate_report_example(
     client: ClientSession, processed_data: Dict[str, Any]
 ) -> str:
     """Call the generate_report operation with processed data."""
-    console.print("\n[bold cyan]Testing generate_report operation:[/bold cyan]")
+    console.print(
+        "\n[bold cyan]Testing generate_report operation:[/bold cyan]"
+    )
 
     # Test different format types
     format_types = ["text", "markdown", "html"]
     reports = {}
 
     for format_type in format_types:
-        console.print(f"\n[bold]Generating report in {format_type} format...[/bold]")
+        console.print(
+            f"\n[bold]Generating report in {format_type} format...[/bold]"
+        )
 
         # Prepare report request
         report_request = {
@@ -171,7 +179,9 @@ async def generate_report_example(
 
 async def validate_schema_example(client: ClientSession) -> bool:
     """Call the validate_schema operation with valid and invalid data."""
-    console.print("\n[bold cyan]Testing validate_schema operation:[/bold cyan]")
+    console.print(
+        "\n[bold cyan]Testing validate_schema operation:[/bold cyan]"
+    )
 
     # Create a schema for user data
     user_schema = {
@@ -200,7 +210,9 @@ async def validate_schema_example(client: ClientSession) -> bool:
     valid_request = {"data": valid_data, "schema": user_schema}
 
     # Call operation with valid data
-    response = await client.call_tool("data-processor.validate_schema", valid_request)
+    response = await client.call_tool(
+        "data-processor.validate_schema", valid_request
+    )
     response_text = response.content[0].text if response.content else ""
 
     # Parse the response
@@ -247,7 +259,9 @@ async def validate_schema_example(client: ClientSession) -> bool:
     invalid_request = {"data": invalid_data, "schema": user_schema}
 
     # Call operation with invalid data
-    response = await client.call_tool("data-processor.validate_schema", invalid_request)
+    response = await client.call_tool(
+        "data-processor.validate_schema", invalid_request
+    )
     response_text = response.content[0].text if response.content else ""
 
     # Parse the response
@@ -276,7 +290,8 @@ async def validate_schema_example(client: ClientSession) -> bool:
             "errors": (
                 None
                 if is_valid
-                else errors or [{"path": "unknown", "message": "Validation failed"}]
+                else errors
+                or [{"path": "unknown", "message": "Validation failed"}]
             ),
         }
 
@@ -284,21 +299,29 @@ async def validate_schema_example(client: ClientSession) -> bool:
     errors = result.get("errors", [])
 
     if not is_valid and errors:
-        console.print("[green]✓ Invalid data correctly failed validation[/green]")
+        console.print(
+            "[green]✓ Invalid data correctly failed validation[/green]"
+        )
         console.print("\n[bold]Validation errors:[/bold]")
         for error in errors:
             console.print(f"  - {error.get('path')}: {error.get('message')}")
     else:
-        console.print("[red]✗ Invalid data incorrectly passed validation[/red]")
+        console.print(
+            "[red]✗ Invalid data incorrectly passed validation[/red]"
+        )
 
     return True
 
 
 async def main():
     """Run the client to demonstrate connectivity with the DataProcessorGroup server."""
-    console.print(Panel.fit("DataProcessorGroup MCP Client Demo", style="green"))
+    console.print(
+        Panel.fit("DataProcessorGroup MCP Client Demo", style="green")
+    )
 
-    console.print("[bold]Connecting to running DataProcessorGroup server...[/bold]")
+    console.print(
+        "[bold]Connecting to running DataProcessorGroup server...[/bold]"
+    )
 
     try:
         # Note: Since the server is already running in a separate terminal,
@@ -321,7 +344,9 @@ async def main():
             async with ClientSession(read_stream, write_stream) as client:
                 # Initialize the connection
                 await client.initialize()
-                console.print("[green]✓ Connected to server successfully[/green]")
+                console.print(
+                    "[green]✓ Connected to server successfully[/green]"
+                )
 
                 # List available tools
                 tool_names = await list_available_tools(client)
@@ -348,11 +373,17 @@ async def main():
 
                 if processed_data:
                     # Step 2: Generate report with the processed data in different formats
-                    console.print("\n[bold]STEP 2: Testing report generation[/bold]")
-                    report = await generate_report_example(client, processed_data)
+                    console.print(
+                        "\n[bold]STEP 2: Testing report generation[/bold]"
+                    )
+                    report = await generate_report_example(
+                        client, processed_data
+                    )
 
                     # Step 3: Validate schema with valid and invalid data
-                    console.print("\n[bold]STEP 3: Testing schema validation[/bold]")
+                    console.print(
+                        "\n[bold]STEP 3: Testing schema validation[/bold]"
+                    )
                     validation_result = await validate_schema_example(client)
 
                     # Print overall summary
@@ -360,12 +391,16 @@ async def main():
                         "\n[bold green]✓ All operations completed successfully![/bold green]"
                     )
                     console.print("\n[bold]Summary:[/bold]")
-                    console.print("1. Connected to the DataProcessorGroup server")
+                    console.print(
+                        "1. Connected to the DataProcessorGroup server"
+                    )
                     console.print("2. Listed available tools")
                     console.print(
                         "3. Called process_data with transformation and aggregation"
                     )
-                    console.print("4. Called generate_report in multiple formats")
+                    console.print(
+                        "4. Called generate_report in multiple formats"
+                    )
                     console.print(
                         "5. Called validate_schema with both valid and invalid data"
                     )

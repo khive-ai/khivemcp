@@ -63,7 +63,9 @@ async def test_schema_group_config():
 
     # Create a ServiceRequest with ExecutionRequest
     request = ServiceRequest(
-        requests=[ExecutionRequest(operation="greet_person", arguments=person_data)]
+        requests=[
+            ExecutionRequest(operation="greet_person", arguments=person_data)
+        ]
     )
 
     result = await server._handle_service_request("schema", request)
@@ -99,7 +101,9 @@ async def test_multi_group_config():
 
     # Create a ServiceRequest with ExecutionRequest
     request = ServiceRequest(
-        requests=[ExecutionRequest(operation="echo", arguments={"text": "test"})]
+        requests=[
+            ExecutionRequest(operation="echo", arguments={"text": "test"})
+        ]
     )
 
     result = await server._handle_service_request("example", request)
@@ -111,7 +115,11 @@ async def test_multi_group_config():
         requests=[
             ExecutionRequest(
                 operation="process_list",
-                arguments={"items": ["test"], "prefix": "->", "uppercase": True},
+                arguments={
+                    "items": ["test"],
+                    "prefix": "->",
+                    "uppercase": True,
+                },
             )
         ]
     )
@@ -122,7 +130,9 @@ async def test_multi_group_config():
     # Test an operation from timeout group
     # Create a ServiceRequest with ExecutionRequest
     request = ServiceRequest(
-        requests=[ExecutionRequest(operation="sleep", arguments={"seconds": 0.1})]
+        requests=[
+            ExecutionRequest(operation="sleep", arguments={"seconds": 0.1})
+        ]
     )
 
     result = await server._handle_service_request("timeout", request)
@@ -143,7 +153,9 @@ async def test_group_config_parameters():
 
     # Create a GroupConfig instance with config
     config = GroupConfig(
-        name="timeout", description="Timeout group", config={"default_delay": 0.5}
+        name="timeout",
+        description="Timeout group",
+        config={"default_delay": 0.5},
     )
     server = AutoMCPServer("test-server", config)
 

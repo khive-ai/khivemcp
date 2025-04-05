@@ -61,7 +61,9 @@ async def test_cpu_intensive_direct():
     ctx.report_progress = report_progress
     ctx.info = info
 
-    result = await group.cpu_intensive(1000, ctx)  # Small iteration count for testing
+    result = await group.cpu_intensive(
+        1000, ctx
+    )  # Small iteration count for testing
     assert "Completed 1000 iterations" in result
     assert "result:" in result
 

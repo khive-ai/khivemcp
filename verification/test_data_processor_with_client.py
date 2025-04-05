@@ -90,10 +90,14 @@ async def test_process_data(client: ClientSession) -> dict:
 
     # Check for case transformation
     if any(item.get("value") == "TEST STRING" for item in processed_items):
-        console.print("[green]✓ Case transformation was applied correctly[/green]")
+        console.print(
+            "[green]✓ Case transformation was applied correctly[/green]"
+        )
 
     # Check for field filtering
-    if all("type" in item.get("metadata", {}) for item in processed_items) and all(
+    if all(
+        "type" in item.get("metadata", {}) for item in processed_items
+    ) and all(
         "priority" not in item.get("metadata", {}) for item in processed_items
     ):
         console.print("[green]✓ Field filtering was applied correctly[/green]")
@@ -101,7 +105,9 @@ async def test_process_data(client: ClientSession) -> dict:
     return result
 
 
-async def test_generate_report(client: ClientSession, processed_data: dict) -> str:
+async def test_generate_report(
+    client: ClientSession, processed_data: dict
+) -> str:
     """Test the generate_report operation."""
     console.print("\n[bold]Testing generate_report operation...[/bold]")
 
@@ -118,7 +124,9 @@ async def test_generate_report(client: ClientSession, processed_data: dict) -> s
 
     # Call the operation
     start_time = time.time()
-    response = await client.call_tool("data-processor.generate_report", report_request)
+    response = await client.call_tool(
+        "data-processor.generate_report", report_request
+    )
     end_time = time.time()
 
     # Extract the response text
@@ -159,7 +167,11 @@ async def test_validate_schema(client: ClientSession) -> bool:
             "age": 30,
             "email": "john@example.com",
             "addresses": [
-                {"street": "123 Main St", "city": "Anytown", "zipcode": "12345"}
+                {
+                    "street": "123 Main St",
+                    "city": "Anytown",
+                    "zipcode": "12345",
+                }
             ],
         },
         "schema": {
@@ -187,7 +199,9 @@ async def test_validate_schema(client: ClientSession) -> bool:
 
     # Call the operation
     start_time = time.time()
-    response = await client.call_tool("data-processor.validate_schema", schema_request)
+    response = await client.call_tool(
+        "data-processor.validate_schema", schema_request
+    )
     end_time = time.time()
 
     # Extract the response text
@@ -206,7 +220,9 @@ async def test_validate_schema(client: ClientSession) -> bool:
                 # This is a simplification - in a real app we'd parse the errors too
                 result = {
                     "valid": False,
-                    "errors": [{"path": "unknown", "message": "validation error"}],
+                    "errors": [
+                        {"path": "unknown", "message": "validation error"}
+                    ],
                 }
             else:
                 # If not recognizable, try to evaluate as Python dict
@@ -222,7 +238,9 @@ async def test_validate_schema(client: ClientSession) -> bool:
     is_valid = result.get("valid", False)
     errors = result.get("errors", [])
 
-    console.print(f"Validation completed in {end_time - start_time:.2f} seconds")
+    console.print(
+        f"Validation completed in {end_time - start_time:.2f} seconds"
+    )
 
     if is_valid:
         console.print("[green]✓ Data is valid according to the schema[/green]")
@@ -231,7 +249,9 @@ async def test_validate_schema(client: ClientSession) -> bool:
         console.print(f"Errors: {errors}")
 
     # Test with invalid data
-    console.print("\n[bold]Testing schema validation with invalid data...[/bold]")
+    console.print(
+        "\n[bold]Testing schema validation with invalid data...[/bold]"
+    )
 
     # Modify the schema request with invalid data
     invalid_schema_request = schema_request.copy()
@@ -269,15 +289,22 @@ async def test_validate_schema(client: ClientSession) -> bool:
                 # Extract errors if possible
                 result = {"valid": False, "errors": []}
                 # Try to parse out error information
-                if "errors=" in response_text and "errors=None" not in response_text:
+                if (
+                    "errors=" in response_text
+                    and "errors=None" not in response_text
+                ):
                     error_parts = response_text.split("errors=")[1].strip()
                     # Add a simple error entry
-                    result["errors"] = [{"path": "extracted", "message": error_parts}]
+                    result["errors"] = [
+                        {"path": "extracted", "message": error_parts}
+                    ]
             else:
                 # If not recognizable, try to evaluate as Python dict
                 result = eval(response_text)
     except Exception as e:
-        console.print(f"[red]✗ Failed to parse response for invalid data: {e}[/red]")
+        console.print(
+            f"[red]✗ Failed to parse response for invalid data: {e}[/red]"
+        )
         return is_valid
 
     # Verify the results for invalid data
@@ -297,12 +324,17 @@ async def test_validate_schema(client: ClientSession) -> bool:
 
 async def main():
     """Run the client tests against the DataProcessorGroup server."""
-    console.print(Panel.fit("DataProcessorGroup MCP Client Test", style="green"))
+    console.print(
+        Panel.fit("DataProcessorGroup MCP Client Test", style="green")
+    )
 
-    # Start the server in a separate process
+    # Start the server in a separate process using the run_group_server
+    config_path = (
+        Path(__file__).parent / "config" / "data_processor_group.json"
+    )
     server_params = StdioServerParameters(
         command="python",
-        args=["-m", "verification.run_data_processor_server"],
+        args=["-m", "verification.run_group_server", str(config_path)],
     )
 
     console.print("[bold]Connecting to DataProcessorGroup server...[/bold]")
@@ -313,7 +345,9 @@ async def main():
             async with ClientSession(read_stream, write_stream) as client:
                 # Initialize the connection
                 await client.initialize()
-                console.print("[green]✓ Connected to server successfully[/green]")
+                console.print(
+                    "[green]✓ Connected to server successfully[/green]"
+                )
 
                 # Get the list of available tools
                 tools_result = await client.list_tools()
@@ -331,14 +365,18 @@ async def main():
                     "data-processor.validate_schema",
                 ]
 
-                all_tools_available = all(tool in tool_names for tool in required_tools)
+                all_tools_available = all(
+                    tool in tool_names for tool in required_tools
+                )
                 if all_tools_available:
                     console.print(
                         "[green]✓ All required operations are available[/green]"
                     )
                 else:
                     missing_tools = [
-                        tool for tool in required_tools if tool not in tool_names
+                        tool
+                        for tool in required_tools
+                        if tool not in tool_names
                     ]
                     console.print(
                         f"[red]✗ Missing operations: {', '.join(missing_tools)}[/red]"
@@ -359,7 +397,11 @@ async def main():
 
                     table.add_row(
                         "process_data",
-                        "[green]PASS[/green]" if processed_data else "[red]FAIL[/red]",
+                        (
+                            "[green]PASS[/green]"
+                            if processed_data
+                            else "[red]FAIL[/red]"
+                        ),
                     )
                     table.add_row(
                         "generate_report",

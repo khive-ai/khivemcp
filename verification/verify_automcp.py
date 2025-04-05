@@ -52,7 +52,11 @@ class VerificationResult:
         self.details = []
 
     def add_result(
-        self, test_name: str, passed: bool, message: str = "", skipped: bool = False
+        self,
+        test_name: str,
+        passed: bool,
+        message: str = "",
+        skipped: bool = False,
     ):
         """Add a test result."""
         if skipped:
@@ -65,7 +69,9 @@ class VerificationResult:
             self.failed += 1
             status = "FAILED"
 
-        self.details.append({"test": test_name, "status": status, "message": message})
+        self.details.append(
+            {"test": test_name, "status": status, "message": message}
+        )
 
     def summary(self) -> str:
         """Get a summary of the verification results."""
@@ -151,13 +157,22 @@ class AutoMCPVerifier:
                 # Create server parameters
                 server_params = StdioServerParameters(
                     command="python",
-                    args=["-m", "verification.run_server", str(config_path)],
+                    args=[
+                        "-m",
+                        "verification.run_group_server",
+                        str(config_path),
+                    ],
                 )
                 self.log(f"Starting server with parameters: {server_params}")
 
                 # Connect to the server using stdio
-                async with stdio_client(server_params) as (read_stream, write_stream):
-                    async with ClientSession(read_stream, write_stream) as client:
+                async with stdio_client(server_params) as (
+                    read_stream,
+                    write_stream,
+                ):
+                    async with ClientSession(
+                        read_stream, write_stream
+                    ) as client:
                         # Initialize the connection
                         await client.initialize()
                         self.log("Client initialized successfully")
@@ -179,10 +194,14 @@ class AutoMCPVerifier:
 
                         # Test hello_world operation
                         try:
-                            response = await client.call_tool("example.hello_world", {})
+                            response = await client.call_tool(
+                                "example.hello_world", {}
+                            )
                             # Get the text from the first content item
                             response_text = (
-                                response.content[0].text if response.content else ""
+                                response.content[0].text
+                                if response.content
+                                else ""
                             )
                             expected = "Hello, World!"
                             passed = expected in response_text
@@ -193,7 +212,9 @@ class AutoMCPVerifier:
                             )
                             self.log(f"hello_world result: {response_text}")
                         except Exception as e:
-                            result.add_result("hello_world operation", False, str(e))
+                            result.add_result(
+                                "hello_world operation", False, str(e)
+                            )
                             self.log(f"hello_world error: {e}", "ERROR")
 
                         # Test echo operation
@@ -204,7 +225,9 @@ class AutoMCPVerifier:
                             )
                             # Get the text from the first content item
                             response_text = (
-                                response.content[0].text if response.content else ""
+                                response.content[0].text
+                                if response.content
+                                else ""
                             )
                             expected = f"Echo: {test_text}"
                             passed = expected in response_text
@@ -226,7 +249,9 @@ class AutoMCPVerifier:
                             )
                             # Get the text from the first content item
                             response_text = (
-                                response.content[0].text if response.content else ""
+                                response.content[0].text
+                                if response.content
+                                else ""
                             )
                             expected = "1, 2, 3, 4, 5"
                             passed = expected in response_text
@@ -237,7 +262,9 @@ class AutoMCPVerifier:
                             )
                             self.log(f"count_to result: {response_text}")
                         except Exception as e:
-                            result.add_result("count_to operation", False, str(e))
+                            result.add_result(
+                                "count_to operation", False, str(e)
+                            )
                             self.log(f"count_to error: {e}", "ERROR")
 
             except Exception as e:
@@ -262,16 +289,25 @@ class AutoMCPVerifier:
             task = progress.add_task("Testing SchemaGroup...", total=None)
 
             try:
-                # Create server parameters
+                # Create server parameters using the new run_group_server script
                 server_params = StdioServerParameters(
                     command="python",
-                    args=["-m", "verification.run_server", str(config_path)],
+                    args=[
+                        "-m",
+                        "verification.run_group_server",
+                        str(config_path),
+                    ],
                 )
                 self.log(f"Starting server with parameters: {server_params}")
 
                 # Connect to the server using stdio
-                async with stdio_client(server_params) as (read_stream, write_stream):
-                    async with ClientSession(read_stream, write_stream) as client:
+                async with stdio_client(server_params) as (
+                    read_stream,
+                    write_stream,
+                ):
+                    async with ClientSession(
+                        read_stream, write_stream
+                    ) as client:
                         # Initialize the connection
                         await client.initialize()
                         self.log("Client initialized successfully")
@@ -281,7 +317,9 @@ class AutoMCPVerifier:
                         tool_names = [tool.name for tool in tools]
 
                         has_greet_person = "schema.greet_person" in tool_names
-                        has_repeat_message = "schema.repeat_message" in tool_names
+                        has_repeat_message = (
+                            "schema.repeat_message" in tool_names
+                        )
                         has_process_list = "schema.process_list" in tool_names
 
                         result.add_result(
@@ -305,7 +343,9 @@ class AutoMCPVerifier:
                             )
                             # Get the text from the first content item
                             response_text = (
-                                response.content[0].text if response.content else ""
+                                response.content[0].text
+                                if response.content
+                                else ""
                             )
                             expected_parts = [
                                 "Hello, John Doe!",
@@ -313,7 +353,8 @@ class AutoMCPVerifier:
                                 "john@example.com",
                             ]
                             passed = all(
-                                part in response_text for part in expected_parts
+                                part in response_text
+                                for part in expected_parts
                             )
                             result.add_result(
                                 "greet_person operation",
@@ -322,17 +363,22 @@ class AutoMCPVerifier:
                             )
                             self.log(f"greet_person result: {response_text}")
                         except Exception as e:
-                            result.add_result("greet_person operation", False, str(e))
+                            result.add_result(
+                                "greet_person operation", False, str(e)
+                            )
                             self.log(f"greet_person error: {e}", "ERROR")
 
                         # Test repeat_message operation
                         try:
                             response = await client.call_tool(
-                                "schema.repeat_message", {"text": "Test", "repeat": 3}
+                                "schema.repeat_message",
+                                {"text": "Test", "repeat": 3},
                             )
                             # Get the text from the first content item
                             response_text = (
-                                response.content[0].text if response.content else ""
+                                response.content[0].text
+                                if response.content
+                                else ""
                             )
                             expected = "Test Test Test"
                             passed = expected in response_text
@@ -343,7 +389,9 @@ class AutoMCPVerifier:
                             )
                             self.log(f"repeat_message result: {response_text}")
                         except Exception as e:
-                            result.add_result("repeat_message operation", False, str(e))
+                            result.add_result(
+                                "repeat_message operation", False, str(e)
+                            )
                             self.log(f"repeat_message error: {e}", "ERROR")
 
                         # Test process_list operation
@@ -358,11 +406,19 @@ class AutoMCPVerifier:
                             )
                             # Get the text from the first content item
                             response_text = (
-                                response.content[0].text if response.content else ""
+                                response.content[0].text
+                                if response.content
+                                else ""
                             )
-                            expected_parts = ["APPLE", "BANANA", "CHERRY", "Fruit:"]
+                            expected_parts = [
+                                "APPLE",
+                                "BANANA",
+                                "CHERRY",
+                                "Fruit:",
+                            ]
                             passed = all(
-                                part in response_text for part in expected_parts
+                                part in response_text
+                                for part in expected_parts
                             )
                             result.add_result(
                                 "process_list operation",
@@ -371,7 +427,9 @@ class AutoMCPVerifier:
                             )
                             self.log(f"process_list result: {response_text}")
                         except Exception as e:
-                            result.add_result("process_list operation", False, str(e))
+                            result.add_result(
+                                "process_list operation", False, str(e)
+                            )
                             self.log(f"process_list error: {e}", "ERROR")
 
             except Exception as e:
@@ -382,7 +440,9 @@ class AutoMCPVerifier:
 
         return result
 
-    async def test_timeout_group(self, timeout: float = 1.0) -> VerificationResult:
+    async def test_timeout_group(
+        self, timeout: float = 1.0
+    ) -> VerificationResult:
         """Test the TimeoutGroup functionality."""
         result = VerificationResult("TimeoutGroup Verification")
         config_path = self.config_dir / "timeout_group.json"
@@ -409,8 +469,13 @@ class AutoMCPVerifier:
                 self.log(f"Starting server with parameters: {server_params}")
 
                 # Connect to the server using stdio
-                async with stdio_client(server_params) as (read_stream, write_stream):
-                    async with ClientSession(read_stream, write_stream) as client:
+                async with stdio_client(server_params) as (
+                    read_stream,
+                    write_stream,
+                ):
+                    async with ClientSession(
+                        read_stream, write_stream
+                    ) as client:
                         # Initialize the connection
                         await client.initialize()
                         self.log("Client initialized successfully")
@@ -421,24 +486,32 @@ class AutoMCPVerifier:
 
                         has_sleep = "timeout.sleep" in tool_names
                         has_slow_counter = "timeout.slow_counter" in tool_names
-                        has_cpu_intensive = "timeout.cpu_intensive" in tool_names
+                        has_cpu_intensive = (
+                            "timeout.cpu_intensive" in tool_names
+                        )
 
                         result.add_result(
                             "Available timeout tools",
-                            has_sleep and has_slow_counter and has_cpu_intensive,
+                            has_sleep
+                            and has_slow_counter
+                            and has_cpu_intensive,
                             f"Found tools: {', '.join(tool_names)}",
                         )
                         self.log(f"Available timeout tools: {tool_names}")
 
                         # Test sleep operation that completes before timeout
                         try:
-                            sleep_time = timeout / 5  # Use a fraction of the timeout
+                            sleep_time = (
+                                timeout / 5
+                            )  # Use a fraction of the timeout
                             response = await client.call_tool(
                                 "timeout.sleep", {"seconds": sleep_time}
                             )
                             # Get the text from the first content item
                             response_text = (
-                                response.content[0].text if response.content else ""
+                                response.content[0].text
+                                if response.content
+                                else ""
                             )
                             expected = f"Slept for {sleep_time} seconds"
                             passed = expected in response_text
@@ -464,12 +537,15 @@ class AutoMCPVerifier:
                             )
                             # Get the text from the first content item
                             response_text = (
-                                response.content[0].text if response.content else ""
+                                response.content[0].text
+                                if response.content
+                                else ""
                             )
                             # For the timeout test, we expect either "timeout" in the response or "Operation timed out"
                             has_timeout = (
                                 "timeout" in response_text.lower()
-                                or "operation timed out" in response_text.lower()
+                                or "operation timed out"
+                                in response_text.lower()
                             )
                             result.add_result(
                                 "sleep operation (exceeds timeout)",
@@ -485,10 +561,14 @@ class AutoMCPVerifier:
                                     True,
                                     f"Expected timeout exception: {e}",
                                 )
-                                self.log(f"sleep timeout: got timeout exception")
+                                self.log(
+                                    f"sleep timeout: got timeout exception"
+                                )
                             else:
                                 result.add_result(
-                                    "sleep operation (exceeds timeout)", False, str(e)
+                                    "sleep operation (exceeds timeout)",
+                                    False,
+                                    str(e),
                                 )
                                 self.log(f"sleep timeout error: {e}", "ERROR")
 
@@ -511,19 +591,30 @@ class AutoMCPVerifier:
             TextColumn("[progress.description]{task.description}"),
             console=console,
         ) as progress:
-            task = progress.add_task("Testing Multi-Group Configuration...", total=None)
+            task = progress.add_task(
+                "Testing Multi-Group Configuration...", total=None
+            )
 
             try:
-                # Create server parameters
+                # Create server parameters using the new run_group_server script
                 server_params = StdioServerParameters(
                     command="python",
-                    args=["-m", "verification.run_server", str(config_path)],
+                    args=[
+                        "-m",
+                        "verification.run_group_server",
+                        str(config_path),
+                    ],
                 )
                 self.log(f"Starting server with parameters: {server_params}")
 
                 # Connect to the server using stdio
-                async with stdio_client(server_params) as (read_stream, write_stream):
-                    async with ClientSession(read_stream, write_stream) as client:
+                async with stdio_client(server_params) as (
+                    read_stream,
+                    write_stream,
+                ):
+                    async with ClientSession(
+                        read_stream, write_stream
+                    ) as client:
                         # Initialize the connection
                         await client.initialize()
                         self.log("Client initialized successfully")
@@ -553,10 +644,14 @@ class AutoMCPVerifier:
                         # Test one operation from each group
                         try:
                             # Example group
-                            response = await client.call_tool("example.hello_world", {})
+                            response = await client.call_tool(
+                                "example.hello_world", {}
+                            )
                             # Get the text from the first content item
                             response_text = (
-                                response.content[0].text if response.content else ""
+                                response.content[0].text
+                                if response.content
+                                else ""
                             )
                             example_ok = "Hello, World!" in response_text
                             result.add_result(
@@ -564,7 +659,9 @@ class AutoMCPVerifier:
                                 example_ok,
                                 f"Response: '{response_text}'",
                             )
-                            self.log(f"Multi-group example operation: {response_text}")
+                            self.log(
+                                f"Multi-group example operation: {response_text}"
+                            )
 
                             # Schema group
                             response = await client.call_tool(
@@ -577,17 +674,22 @@ class AutoMCPVerifier:
                             )
                             # Get the text from the first content item
                             response_text = (
-                                response.content[0].text if response.content else ""
+                                response.content[0].text
+                                if response.content
+                                else ""
                             )
                             schema_ok = (
-                                "Jane Doe" in response_text and "25" in response_text
+                                "Jane Doe" in response_text
+                                and "25" in response_text
                             )
                             result.add_result(
                                 "Multi-group schema operation",
                                 schema_ok,
                                 f"Response: '{response_text}'",
                             )
-                            self.log(f"Multi-group schema operation: {response_text}")
+                            self.log(
+                                f"Multi-group schema operation: {response_text}"
+                            )
 
                             # Timeout group
                             response = await client.call_tool(
@@ -595,19 +697,29 @@ class AutoMCPVerifier:
                             )
                             # Get the text from the first content item
                             response_text = (
-                                response.content[0].text if response.content else ""
+                                response.content[0].text
+                                if response.content
+                                else ""
                             )
-                            timeout_ok = "Slept for 0.1 seconds" in response_text
+                            timeout_ok = (
+                                "Slept for 0.1 seconds" in response_text
+                            )
                             result.add_result(
                                 "Multi-group timeout operation",
                                 timeout_ok,
                                 f"Response: '{response_text}'",
                             )
-                            self.log(f"Multi-group timeout operation: {response_text}")
+                            self.log(
+                                f"Multi-group timeout operation: {response_text}"
+                            )
 
                         except Exception as e:
-                            result.add_result("Multi-group operations", False, str(e))
-                            self.log(f"Multi-group operations error: {e}", "ERROR")
+                            result.add_result(
+                                "Multi-group operations", False, str(e)
+                            )
+                            self.log(
+                                f"Multi-group operations error: {e}", "ERROR"
+                            )
 
             except Exception as e:
                 result.add_result("Multi-group server setup", False, str(e))
@@ -654,7 +766,9 @@ class AutoMCPVerifier:
 
     def print_results(self):
         """Print the verification results."""
-        console.print("\n[bold]AutoMCP Verification Results[/bold]", style="green")
+        console.print(
+            "\n[bold]AutoMCP Verification Results[/bold]", style="green"
+        )
 
         total_passed = sum(result.passed for result in self.results)
         total_failed = sum(result.failed for result in self.results)
@@ -698,8 +812,12 @@ class AutoMCPVerifier:
                 "\nRecommendations:",
                 style="yellow",
             )
-            console.print("- Check that all required packages are installed correctly")
-            console.print("- Verify that your AutoMCP configuration files are valid")
+            console.print(
+                "- Check that all required packages are installed correctly"
+            )
+            console.print(
+                "- Verify that your AutoMCP configuration files are valid"
+            )
             console.print(
                 "- Run with --verbose flag for more detailed error information"
             )
@@ -713,7 +831,9 @@ class AutoMCPVerifier:
 
 @app.command()
 def single_group(
-    verbose: bool = typer.Option(False, "--verbose", "-v", help="Enable verbose output")
+    verbose: bool = typer.Option(
+        False, "--verbose", "-v", help="Enable verbose output"
+    )
 ):
     """
     Verify single-group configuration loading.
@@ -721,7 +841,9 @@ def single_group(
     This command tests the basic functionality of loading and using a single ServiceGroup.
     It verifies that operations can be called and return the expected results.
     """
-    console.print(Panel.fit("AutoMCP Single-Group Verification", style="green"))
+    console.print(
+        Panel.fit("AutoMCP Single-Group Verification", style="green")
+    )
     verifier = AutoMCPVerifier(verbose=verbose)
     asyncio.run(verifier.run_verification("single-group"))
     verifier.print_results()
@@ -729,7 +851,9 @@ def single_group(
 
 @app.command()
 def multi_group(
-    verbose: bool = typer.Option(False, "--verbose", "-v", help="Enable verbose output")
+    verbose: bool = typer.Option(
+        False, "--verbose", "-v", help="Enable verbose output"
+    )
 ):
     """
     Verify multi-group configuration loading.
@@ -758,7 +882,9 @@ def timeout(
     the timeout are interrupted.
     """
     console.print(
-        Panel.fit(f"AutoMCP Timeout Verification (timeout={timeout}s)", style="green")
+        Panel.fit(
+            f"AutoMCP Timeout Verification (timeout={timeout}s)", style="green"
+        )
     )
     verifier = AutoMCPVerifier(verbose=verbose)
     asyncio.run(verifier.run_verification("timeout", timeout))
@@ -767,7 +893,9 @@ def timeout(
 
 @app.command()
 def schema(
-    verbose: bool = typer.Option(False, "--verbose", "-v", help="Enable verbose output")
+    verbose: bool = typer.Option(
+        False, "--verbose", "-v", help="Enable verbose output"
+    )
 ):
     """
     Verify schema validation.
@@ -775,7 +903,9 @@ def schema(
     This command tests the Pydantic schema validation functionality in AutoMCP.
     It verifies that operations with schemas correctly validate input parameters.
     """
-    console.print(Panel.fit("AutoMCP Schema Validation Verification", style="green"))
+    console.print(
+        Panel.fit("AutoMCP Schema Validation Verification", style="green")
+    )
     verifier = AutoMCPVerifier(verbose=verbose)
     asyncio.run(verifier.run_verification("schema"))
     verifier.print_results()

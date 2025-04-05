@@ -21,7 +21,9 @@ class TimeoutGroup(ServiceGroup):
         return f"Slept for {seconds} seconds"
 
     @operation()
-    async def slow_counter(self, limit: int, delay: float, ctx: Context) -> str:
+    async def slow_counter(
+        self, limit: int, delay: float, ctx: Context
+    ) -> str:
         """Count up to a limit with delay between each number and progress reporting.
 
         Args:
@@ -58,7 +60,9 @@ class TimeoutGroup(ServiceGroup):
         Returns:
             A string with timing information and result
         """
-        ctx.info(f"Starting CPU-intensive operation with {iterations} iterations")
+        ctx.info(
+            f"Starting CPU-intensive operation with {iterations} iterations"
+        )
         start_time = time.time()
 
         result = 0
@@ -78,7 +82,9 @@ class TimeoutGroup(ServiceGroup):
 
             # Yield control every chunk_size iterations
             if i % chunk_size == chunk_size - 1:
-                await asyncio.sleep(0)  # Yield to event loop without actual delay
+                await asyncio.sleep(
+                    0
+                )  # Yield to event loop without actual delay
 
         total_time = time.time() - start_time
         return f"Completed {iterations} iterations in {total_time:.2f} seconds with result: {result}"

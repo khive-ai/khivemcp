@@ -1,30 +1,17 @@
 """Tests for schema validation in AutoMCP operations."""
 
 import pytest
-from mcp.types import TextContent
 from pydantic import ValidationError
 
 from automcp.server import AutoMCPServer
+from automcp.testing.context import MockContext
 from automcp.types import ExecutionRequest, GroupConfig, ServiceRequest
 from verification.groups.schema_group import SchemaGroup
-from verification.schemas import ListProcessingSchema, MessageSchema, PersonSchema
-
-
-class MockContext(TextContent):
-    """Mock context for testing operations with progress reporting."""
-
-    def __init__(self):
-        super().__init__(type="text", text="")
-        self.progress_updates = []
-        self.info_messages = []
-
-    def info(self, message):
-        """Record an info message."""
-        self.info_messages.append(message)
-
-    async def report_progress(self, current, total):
-        """Record a progress update."""
-        self.progress_updates.append((current, total))
+from verification.schemas import (
+    ListProcessingSchema,
+    MessageSchema,
+    PersonSchema,
+)
 
 
 @pytest.mark.asyncio
@@ -75,7 +62,9 @@ async def test_schema_validation_failure():
     invalid_person_data = {"name": "John Doe"}  # Missing required 'age' field
     request = ServiceRequest(
         requests=[
-            ExecutionRequest(operation="greet_person", arguments=invalid_person_data)
+            ExecutionRequest(
+                operation="greet_person", arguments=invalid_person_data
+            )
         ]
     )
 
@@ -93,7 +82,9 @@ async def test_schema_validation_failure():
     }  # Age should be an integer
     request = ServiceRequest(
         requests=[
-            ExecutionRequest(operation="greet_person", arguments=invalid_person_data)
+            ExecutionRequest(
+                operation="greet_person", arguments=invalid_person_data
+            )
         ]
     )
 
@@ -104,10 +95,15 @@ async def test_schema_validation_failure():
     )
 
     # Test value out of range in MessageSchema
-    invalid_message_data = {"text": "Hello", "repeat": 15}  # repeat must be <= 10
+    invalid_message_data = {
+        "text": "Hello",
+        "repeat": 15,
+    }  # repeat must be <= 10
     request = ServiceRequest(
         requests=[
-            ExecutionRequest(operation="repeat_message", arguments=invalid_message_data)
+            ExecutionRequest(
+                operation="repeat_message", arguments=invalid_message_data
+            )
         ]
     )
 
@@ -147,7 +143,9 @@ async def test_schema_optional_fields():
 async def test_direct_schema_validation():
     """Test direct schema validation with Pydantic models."""
     # Test valid PersonSchema
-    valid_person = PersonSchema(name="John Doe", age=30, email="john@example.com")
+    valid_person = PersonSchema(
+        name="John Doe", age=30, email="john@example.com"
+    )
     assert valid_person.name == "John Doe"
     assert valid_person.age == 30
     assert valid_person.email == "john@example.com"

@@ -142,7 +142,9 @@ def main():
         "--coverage", action="store_true", help="Generate coverage information"
     )
     parser.add_argument(
-        "--html-report", action="store_true", help="Generate HTML coverage report"
+        "--html-report",
+        action="store_true",
+        help="Generate HTML coverage report",
     )
     args = parser.parse_args()
 

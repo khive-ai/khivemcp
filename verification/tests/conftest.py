@@ -6,24 +6,7 @@ from typing import Any, AsyncGenerator, Callable, Tuple
 import pytest
 
 from automcp.server import AutoMCPServer
-
-
-class MockContext:
-    """Mock context for testing operations that require progress reporting."""
-
-    def __init__(self):
-        """Initialize the mock context."""
-        self.progress_callback: Callable[[int, int], None] | None = None
-        self.info_messages: list[str] = []
-
-    def info(self, message: str) -> None:
-        """Record an info message."""
-        self.info_messages.append(message)
-
-    async def report_progress(self, current: int, total: int) -> None:
-        """Report progress to the registered callback."""
-        if self.progress_callback:
-            self.progress_callback(current, total)
+from automcp.testing.context import MockContext
 
 
 class MockClient:
@@ -58,7 +41,9 @@ class MockClient:
         else:
             return await op(**kwargs)
 
-    def set_progress_callback(self, callback: Callable[[int, int], None]) -> None:
+    def set_progress_callback(
+        self, callback: Callable[[int, int], None]
+    ) -> None:
         """Set the progress callback."""
         self._progress_callback = callback
 

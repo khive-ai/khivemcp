@@ -180,7 +180,9 @@ async def test_generate_report_direct():
     }
 
     # Test with default format (text)
-    result = await group.generate_report(processed_data=processed_data, ctx=ctx)
+    result = await group.generate_report(
+        processed_data=processed_data, ctx=ctx
+    )
 
     assert "Data Processing Report" in result
     assert "Generated:" in result
@@ -215,7 +217,9 @@ async def test_generate_report_formats():
 
     # Test markdown format
     result = await group.generate_report(
-        processed_data=processed_data, format={"format_type": "markdown"}, ctx=ctx
+        processed_data=processed_data,
+        format={"format_type": "markdown"},
+        ctx=ctx,
     )
 
     assert "# Data Processing Report" in result
@@ -294,7 +298,10 @@ async def test_validate_schema_advanced():
     group = DataProcessorGroup()
 
     # Test array validation
-    array_schema = {"type": "array", "items": {"type": "integer", "minimum": 0}}
+    array_schema = {
+        "type": "array",
+        "items": {"type": "integer", "minimum": 0},
+    }
 
     valid_array = [1, 2, 3, 4, 5]
     result = await group.validate_schema(data=valid_array, schema=array_schema)
@@ -302,7 +309,9 @@ async def test_validate_schema_advanced():
     assert result.valid is True
 
     invalid_array = [1, 2, "three", 4, 5]
-    result = await group.validate_schema(data=invalid_array, schema=array_schema)
+    result = await group.validate_schema(
+        data=invalid_array, schema=array_schema
+    )
 
     assert result.valid is False
     assert any("[2]" in error.path for error in result.errors)
@@ -340,7 +349,9 @@ async def test_validate_schema_advanced():
         }
     }
 
-    result = await group.validate_schema(data=valid_nested, schema=nested_schema)
+    result = await group.validate_schema(
+        data=valid_nested, schema=nested_schema
+    )
 
     assert result.valid is True
 
@@ -354,7 +365,9 @@ async def test_validate_schema_advanced():
         }
     }
 
-    result = await group.validate_schema(data=invalid_nested, schema=nested_schema)
+    result = await group.validate_schema(
+        data=invalid_nested, schema=nested_schema
+    )
 
     assert result.valid is False
     assert any("contact.email" in error.path for error in result.errors)
@@ -414,7 +427,9 @@ async def test_data_processor_group_integration():
             },
         }
 
-        response = await client.call_tool("data-processor.process_data", process_data)
+        response = await client.call_tool(
+            "data-processor.process_data", process_data
+        )
         response_text = response.content[0].text if response.content else ""
 
         # Check for expected content in response
@@ -435,10 +450,15 @@ async def test_data_processor_group_integration():
                     {"id": "test2", "value": 123},
                 ]
             },
-            "format": {"title": "Integration Test Report", "format_type": "markdown"},
+            "format": {
+                "title": "Integration Test Report",
+                "format_type": "markdown",
+            },
         }
 
-        response = await client.call_tool("data-processor.generate_report", report_data)
+        response = await client.call_tool(
+            "data-processor.generate_report", report_data
+        )
         response_text = response.content[0].text if response.content else ""
 
         assert "# Integration Test Report" in response_text
@@ -456,7 +476,9 @@ async def test_data_processor_group_integration():
             },
         }
 
-        response = await client.call_tool("data-processor.validate_schema", schema_data)
+        response = await client.call_tool(
+            "data-processor.validate_schema", schema_data
+        )
         response_text = response.content[0].text if response.content else ""
 
         assert "valid" in response_text
@@ -468,7 +490,8 @@ async def test_data_processor_validation_errors():
     """Test validation error handling for DataProcessorGroup."""
     # Create server with the config
     config = GroupConfig(
-        name="data-processor", description="Group for data processing operations"
+        name="data-processor",
+        description="Group for data processing operations",
     )
     server = AutoMCPServer("test-server", config)
 
@@ -524,5 +547,6 @@ async def test_data_processor_validation_errors():
         assert "valid" in response_text.lower()
         assert "error" in response_text.lower()
         assert (
-            "minimum" in response_text.lower() or "less than" in response_text.lower()
+            "minimum" in response_text.lower()
+            or "less than" in response_text.lower()
         )

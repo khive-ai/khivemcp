@@ -35,13 +35,17 @@ class ProcessingParameters(BaseModel):
         False, description="Whether to aggregate numeric values"
     )
     sort_by: Optional[str] = Field(None, description="Field to sort by")
-    sort_order: Optional[str] = Field("asc", description="Sort order ('asc' or 'desc')")
+    sort_order: Optional[str] = Field(
+        "asc", description="Sort order ('asc' or 'desc')"
+    )
 
 
 class DataProcessingSchema(BaseModel):
     """Schema for data processing operation."""
 
-    data: List[DataItem] = Field(..., description="List of data items to process")
+    data: List[DataItem] = Field(
+        ..., description="List of data items to process"
+    )
     parameters: ProcessingParameters = Field(
         default_factory=ProcessingParameters,
         description="Parameters for processing the data",
@@ -51,11 +55,15 @@ class DataProcessingSchema(BaseModel):
 class ReportFormat(BaseModel):
     """Schema for report formatting options."""
 
-    title: str = Field("Data Processing Report", description="Title of the report")
+    title: str = Field(
+        "Data Processing Report", description="Title of the report"
+    )
     include_summary: bool = Field(
         True, description="Whether to include a summary section"
     )
-    include_timestamp: bool = Field(True, description="Whether to include a timestamp")
+    include_timestamp: bool = Field(
+        True, description="Whether to include a timestamp"
+    )
     format_type: str = Field(
         "text", description="Output format type ('text', 'markdown', 'html')"
     )
@@ -68,7 +76,8 @@ class ReportGenerationSchema(BaseModel):
         ..., description="The processed data to generate a report for"
     )
     format: ReportFormat = Field(
-        default_factory=ReportFormat, description="Formatting options for the report"
+        default_factory=ReportFormat,
+        description="Formatting options for the report",
     )
 
 
@@ -84,31 +93,45 @@ class SchemaDefinition(BaseModel):
     required: Optional[List[str]] = Field(
         None, description="Required properties for object types"
     )
-    items: Optional[Dict[str, Any]] = Field(None, description="Schema for array items")
+    items: Optional[Dict[str, Any]] = Field(
+        None, description="Schema for array items"
+    )
     format: Optional[str] = Field(None, description="Format for string types")
-    minimum: Optional[float] = Field(None, description="Minimum value for number types")
-    maximum: Optional[float] = Field(None, description="Maximum value for number types")
-    pattern: Optional[str] = Field(None, description="Regex pattern for string types")
+    minimum: Optional[float] = Field(
+        None, description="Minimum value for number types"
+    )
+    maximum: Optional[float] = Field(
+        None, description="Maximum value for number types"
+    )
+    pattern: Optional[str] = Field(
+        None, description="Regex pattern for string types"
+    )
 
 
 class SchemaValidationRequestSchema(BaseModel):
     """Schema for schema validation operation."""
 
     data: Any = Field(..., description="The data to validate")
-    schema: SchemaDefinition = Field(..., description="The schema to validate against")
+    schema: SchemaDefinition = Field(
+        ..., description="The schema to validate against"
+    )
 
 
 class ValidationError(BaseModel):
     """Schema for validation error details."""
 
-    path: str = Field(..., description="Path to the error location in the data")
+    path: str = Field(
+        ..., description="Path to the error location in the data"
+    )
     message: str = Field(..., description="Error message")
 
 
 class ValidationResult(BaseModel):
     """Schema for validation result."""
 
-    valid: bool = Field(..., description="Whether the data is valid against the schema")
+    valid: bool = Field(
+        ..., description="Whether the data is valid against the schema"
+    )
     errors: Optional[List[ValidationError]] = Field(
         None, description="List of validation errors if any"
     )
@@ -124,7 +147,9 @@ class DataProcessorGroup(ServiceGroup):
     """
 
     @operation(schema=DataProcessingSchema)
-    async def process_data(self, data: DataProcessingSchema, ctx: Context) -> dict:
+    async def process_data(
+        self, data: DataProcessingSchema, ctx: Context
+    ) -> dict:
         """Process JSON data according to specified parameters.
 
         Args:
@@ -179,7 +204,9 @@ class DataProcessorGroup(ServiceGroup):
             if params.filter_fields:
                 # Only include specified fields
                 filtered_metadata = {
-                    k: v for k, v in item.metadata.items() if k in params.filter_fields
+                    k: v
+                    for k, v in item.metadata.items()
+                    if k in params.filter_fields
                 }
                 processed["metadata"] = filtered_metadata
             else:
@@ -187,7 +214,9 @@ class DataProcessorGroup(ServiceGroup):
 
         return processed
 
-    def _aggregate_data(self, processed_items: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def _aggregate_data(
+        self, processed_items: List[Dict[str, Any]]
+    ) -> Dict[str, Any]:
         """Aggregate numeric values in the processed data."""
         numeric_values = []
         for item in processed_items:
@@ -248,7 +277,9 @@ class DataProcessorGroup(ServiceGroup):
                 report_lines.append(f"**Generated:** {timestamp}")
                 report_lines.append("")
             elif format_type == "html":
-                report_lines.append(f"<p><strong>Generated:</strong> {timestamp}</p>")
+                report_lines.append(
+                    f"<p><strong>Generated:</strong> {timestamp}</p>"
+                )
             else:  # text
                 report_lines.append(f"Generated: {timestamp}")
                 report_lines.append("")
@@ -277,7 +308,9 @@ class DataProcessorGroup(ServiceGroup):
                     report_lines.append("<h3>Aggregated Data</h3>")
                     report_lines.append("<ul>")
                     for key, value in aggregated_data.items():
-                        report_lines.append(f"<li><strong>{key}:</strong> {value}</li>")
+                        report_lines.append(
+                            f"<li><strong>{key}:</strong> {value}</li>"
+                        )
                     report_lines.append("</ul>")
             else:  # text
                 report_lines.append("Summary")
@@ -301,7 +334,9 @@ class DataProcessorGroup(ServiceGroup):
                     if "metadata" in item and item["metadata"]:
                         report_lines.append("- **Metadata:**")
                         for meta_key, meta_value in item["metadata"].items():
-                            report_lines.append(f"  - {meta_key}: {meta_value}")
+                            report_lines.append(
+                                f"  - {meta_key}: {meta_value}"
+                            )
                     report_lines.append("")
             elif format_type == "html":
                 report_lines.append("<h2>Data Items</h2>")
@@ -313,10 +348,14 @@ class DataProcessorGroup(ServiceGroup):
                     )
                     if "metadata" in item and item["metadata"]:
                         report_lines.append("<div class='metadata'>")
-                        report_lines.append("<p><strong>Metadata:</strong></p>")
+                        report_lines.append(
+                            "<p><strong>Metadata:</strong></p>"
+                        )
                         report_lines.append("<ul>")
                         for meta_key, meta_value in item["metadata"].items():
-                            report_lines.append(f"<li>{meta_key}: {meta_value}</li>")
+                            report_lines.append(
+                                f"<li>{meta_key}: {meta_value}</li>"
+                            )
                         report_lines.append("</ul>")
                         report_lines.append("</div>")
                     report_lines.append("</div>")
@@ -355,7 +394,9 @@ class DataProcessorGroup(ServiceGroup):
 
         # Validate the data against the schema
         try:
-            self._validate_data_against_schema(request.data, request.schema, "", errors)
+            self._validate_data_against_schema(
+                request.data, request.schema, "", errors
+            )
             valid = len(errors) == 0
         except Exception as e:
             errors.append(
@@ -380,7 +421,8 @@ class DataProcessorGroup(ServiceGroup):
             if not isinstance(data, dict):
                 errors.append(
                     ValidationError(
-                        path=path, message=f"Expected object, got {type(data).__name__}"
+                        path=path,
+                        message=f"Expected object, got {type(data).__name__}",
                     )
                 )
                 return
@@ -392,7 +434,9 @@ class DataProcessorGroup(ServiceGroup):
                         errors.append(
                             ValidationError(
                                 path=(
-                                    f"{path}.{required_prop}" if path else required_prop
+                                    f"{path}.{required_prop}"
+                                    if path
+                                    else required_prop
                                 ),
                                 message=f"Required property '{required_prop}' is missing",
                             )
@@ -402,7 +446,9 @@ class DataProcessorGroup(ServiceGroup):
             if schema.properties:
                 for prop_name, prop_schema in schema.properties.items():
                     if prop_name in data:
-                        prop_path = f"{path}.{prop_name}" if path else prop_name
+                        prop_path = (
+                            f"{path}.{prop_name}" if path else prop_name
+                        )
                         # Create a SchemaDefinition from the property schema
                         prop_schema_def = SchemaDefinition(**prop_schema)
                         self._validate_data_against_schema(
@@ -413,7 +459,8 @@ class DataProcessorGroup(ServiceGroup):
             if not isinstance(data, list):
                 errors.append(
                     ValidationError(
-                        path=path, message=f"Expected array, got {type(data).__name__}"
+                        path=path,
+                        message=f"Expected array, got {type(data).__name__}",
                     )
                 )
                 return
@@ -431,7 +478,8 @@ class DataProcessorGroup(ServiceGroup):
             if not isinstance(data, str):
                 errors.append(
                     ValidationError(
-                        path=path, message=f"Expected string, got {type(data).__name__}"
+                        path=path,
+                        message=f"Expected string, got {type(data).__name__}",
                     )
                 )
                 return
@@ -443,7 +491,9 @@ class DataProcessorGroup(ServiceGroup):
                 )
 
             # Validate pattern
-            if schema.pattern and not self._matches_pattern(data, schema.pattern):
+            if schema.pattern and not self._matches_pattern(
+                data, schema.pattern
+            ):
                 errors.append(
                     ValidationError(
                         path=path,
@@ -455,7 +505,8 @@ class DataProcessorGroup(ServiceGroup):
             if not isinstance(data, (int, float)):
                 errors.append(
                     ValidationError(
-                        path=path, message=f"Expected number, got {type(data).__name__}"
+                        path=path,
+                        message=f"Expected number, got {type(data).__name__}",
                     )
                 )
                 return
@@ -500,7 +551,8 @@ class DataProcessorGroup(ServiceGroup):
             if data is not None:
                 errors.append(
                     ValidationError(
-                        path=path, message=f"Expected null, got {type(data).__name__}"
+                        path=path,
+                        message=f"Expected null, got {type(data).__name__}",
                     )
                 )
 

@@ -67,7 +67,9 @@ async def test_example_group_integration():
 
         # Test count_to operation
         test_number = 5
-        response = await client.call_tool("example.count_to", {"number": test_number})
+        response = await client.call_tool(
+            "example.count_to", {"number": test_number}
+        )
         response_text = response.content[0].text if response.content else ""
         assert "1, 2, 3, 4, 5" in response_text
 
@@ -89,7 +91,8 @@ async def test_schema_group_integration():
     # Register the group manually for testing
     schema_group = SchemaGroup()
     schema_group.config = GroupConfig(
-        name="schema", description="Schema validation group for AutoMCP verification"
+        name="schema",
+        description="Schema validation group for AutoMCP verification",
     )
     server.groups["schema"] = schema_group
 
@@ -120,7 +123,11 @@ async def test_schema_group_integration():
         assert "test@example.com" in response_text
 
         # Test process_list operation
-        list_data = {"items": ["one", "two"], "prefix": "->", "uppercase": True}
+        list_data = {
+            "items": ["one", "two"],
+            "prefix": "->",
+            "uppercase": True,
+        }
         response = await client.call_tool("schema.process_list", list_data)
         response_text = response.content[0].text if response.content else ""
         assert "-> ONE" in response_text
@@ -133,7 +140,10 @@ async def test_schema_group_integration():
         }  # Missing required 'age'
         response = await client.call_tool("schema.greet_person", invalid_data)
         response_text = response.content[0].text if response.content else ""
-        assert "error" in response_text.lower() or "validation" in response_text.lower()
+        assert (
+            "error" in response_text.lower()
+            or "validation" in response_text.lower()
+        )
 
 
 @pytest.mark.asyncio
@@ -153,7 +163,8 @@ async def test_timeout_group_integration():
     # Register the group manually for testing
     timeout_group = TimeoutGroup()
     timeout_group.config = GroupConfig(
-        name="timeout", description="Timeout testing group for AutoMCP verification"
+        name="timeout",
+        description="Timeout testing group for AutoMCP verification",
     )
     server.groups["timeout"] = timeout_group
 
@@ -174,11 +185,15 @@ async def test_timeout_group_integration():
         # Test sleep operation
         sleep_time = 0.2
         start_time = time.time()
-        response = await client.call_tool("timeout.sleep", {"seconds": sleep_time})
+        response = await client.call_tool(
+            "timeout.sleep", {"seconds": sleep_time}
+        )
         elapsed = time.time() - start_time
         response_text = response.content[0].text if response.content else ""
         assert f"Slept for {sleep_time} seconds" in response_text
-        assert sleep_time <= elapsed <= sleep_time + 0.5  # Allow small timing variance
+        assert (
+            sleep_time <= elapsed <= sleep_time + 0.5
+        )  # Allow small timing variance
 
         # Test slow_counter operation
         response = await client.call_tool(
@@ -189,7 +204,9 @@ async def test_timeout_group_integration():
         assert "1, 2, 3" in response_text
 
         # Test cpu_intensive operation with small iteration count
-        response = await client.call_tool("timeout.cpu_intensive", {"iterations": 100})
+        response = await client.call_tool(
+            "timeout.cpu_intensive", {"iterations": 100}
+        )
         response_text = response.content[0].text if response.content else ""
         assert "Completed 100 iterations" in response_text
         assert "result:" in response_text
@@ -212,19 +229,22 @@ async def test_multi_group_integration():
     # Register the groups manually for testing
     example_group = ExampleGroup()
     example_group.config = GroupConfig(
-        name="example", description="Basic example group for AutoMCP verification"
+        name="example",
+        description="Basic example group for AutoMCP verification",
     )
     server.groups["example"] = example_group
 
     schema_group = SchemaGroup()
     schema_group.config = GroupConfig(
-        name="schema", description="Schema validation group for AutoMCP verification"
+        name="schema",
+        description="Schema validation group for AutoMCP verification",
     )
     server.groups["schema"] = schema_group
 
     timeout_group = TimeoutGroup()
     timeout_group.config = GroupConfig(
-        name="timeout", description="Timeout testing group for AutoMCP verification"
+        name="timeout",
+        description="Timeout testing group for AutoMCP verification",
     )
     server.groups["timeout"] = timeout_group
 
@@ -238,9 +258,15 @@ async def test_multi_group_integration():
         tool_names = [tool.name for tool in tools_result.tools]
 
         # Verify tools from all groups are available
-        example_tools = [name for name in tool_names if name.startswith("example.")]
-        schema_tools = [name for name in tool_names if name.startswith("schema.")]
-        timeout_tools = [name for name in tool_names if name.startswith("timeout.")]
+        example_tools = [
+            name for name in tool_names if name.startswith("example.")
+        ]
+        schema_tools = [
+            name for name in tool_names if name.startswith("schema.")
+        ]
+        timeout_tools = [
+            name for name in tool_names if name.startswith("timeout.")
+        ]
 
         assert len(example_tools) >= 3
         assert len(schema_tools) >= 3
@@ -253,7 +279,11 @@ async def test_multi_group_integration():
         assert "Hello, World!" in response_text
 
         # Schema group
-        person_data = {"name": "Multi Group", "age": 30, "email": "multi@example.com"}
+        person_data = {
+            "name": "Multi Group",
+            "age": 30,
+            "email": "multi@example.com",
+        }
         response = await client.call_tool("schema.greet_person", person_data)
         response_text = response.content[0].text if response.content else ""
         assert "Hello, Multi Group!" in response_text
@@ -279,7 +309,8 @@ async def test_timeout_handling_integration():
     server1 = AutoMCPServer("test-server", config, timeout=1.0)
     timeout_group1 = TimeoutGroup()
     timeout_group1.config = GroupConfig(
-        name="timeout", description="Timeout testing group for AutoMCP verification"
+        name="timeout",
+        description="Timeout testing group for AutoMCP verification",
     )
     server1.groups["timeout"] = timeout_group1
 
@@ -297,7 +328,8 @@ async def test_timeout_handling_integration():
     server2 = AutoMCPServer("test-server", config, timeout=0.2)
     timeout_group2 = TimeoutGroup()
     timeout_group2.config = GroupConfig(
-        name="timeout", description="Timeout testing group for AutoMCP verification"
+        name="timeout",
+        description="Timeout testing group for AutoMCP verification",
     )
     server2.groups["timeout"] = timeout_group2
 
@@ -308,8 +340,12 @@ async def test_timeout_handling_integration():
     ):
         # Test operation that exceeds timeout
         try:
-            response = await client.call_tool("timeout.sleep", {"seconds": 1.0})
-            response_text = response.content[0].text if response.content else ""
+            response = await client.call_tool(
+                "timeout.sleep", {"seconds": 1.0}
+            )
+            response_text = (
+                response.content[0].text if response.content else ""
+            )
             # If we get a response, it should indicate a timeout
             assert (
                 "timeout" in str(response.errors).lower()
@@ -355,9 +391,15 @@ async def test_specific_group_loading():
         tool_names = [tool.name for tool in tools_result.tools]
 
         # Verify only example group tools are available
-        example_tools = [name for name in tool_names if name.startswith("example.")]
-        schema_tools = [name for name in tool_names if name.startswith("schema.")]
-        timeout_tools = [name for name in tool_names if name.startswith("timeout.")]
+        example_tools = [
+            name for name in tool_names if name.startswith("example.")
+        ]
+        schema_tools = [
+            name for name in tool_names if name.startswith("schema.")
+        ]
+        timeout_tools = [
+            name for name in tool_names if name.startswith("timeout.")
+        ]
 
         assert len(example_tools) >= 3
         assert len(schema_tools) == 0

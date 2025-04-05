@@ -4,7 +4,11 @@ from mcp.types import TextContent as Context
 
 from automcp.group import ServiceGroup
 from automcp.operation import operation
-from verification.schemas import ListProcessingSchema, MessageSchema, PersonSchema
+from verification.schemas import (
+    ListProcessingSchema,
+    MessageSchema,
+    PersonSchema,
+)
 
 
 class SchemaGroup(ServiceGroup):
@@ -21,7 +25,9 @@ class SchemaGroup(ServiceGroup):
         return greeting
 
     @operation(schema=MessageSchema)
-    async def repeat_message(self, message: MessageSchema, ctx: Context) -> str:
+    async def repeat_message(
+        self, message: MessageSchema, ctx: Context
+    ) -> str:
         """Repeat a message a specified number of times with progress reporting."""
         ctx.info(f"Repeating message {message.repeat} times")
         result = []

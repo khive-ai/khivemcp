@@ -4,28 +4,11 @@ import asyncio
 import time
 
 import pytest
-from mcp.types import TextContent
 
 from automcp.server import AutoMCPServer
+from automcp.testing.context import MockContext
 from automcp.types import ExecutionRequest, GroupConfig, ServiceRequest
 from verification.groups.timeout_group import TimeoutGroup
-
-
-class MockContext(TextContent):
-    """Mock context for testing operations with progress reporting."""
-
-    def __init__(self):
-        super().__init__(type="text", text="")
-        self.progress_updates = []
-        self.info_messages = []
-
-    def info(self, message):
-        """Record an info message."""
-        self.info_messages.append(message)
-
-    async def report_progress(self, current, total):
-        """Record a progress update."""
-        self.progress_updates.append((current, total))
 
 
 @pytest.mark.asyncio
@@ -38,7 +21,9 @@ async def test_operation_completes_before_timeout():
 
     # Test sleep operation with duration less than timeout
     request = ServiceRequest(
-        requests=[ExecutionRequest(operation="sleep", arguments={"seconds": 0.2})]
+        requests=[
+            ExecutionRequest(operation="sleep", arguments={"seconds": 0.2})
+        ]
     )
 
     start_time = time.time()
@@ -59,7 +44,9 @@ async def test_operation_exceeds_timeout():
 
     # Test sleep operation with duration greater than timeout
     request = ServiceRequest(
-        requests=[ExecutionRequest(operation="sleep", arguments={"seconds": 1.0})]
+        requests=[
+            ExecutionRequest(operation="sleep", arguments={"seconds": 1.0})
+        ]
     )
 
     start_time = time.time()
@@ -67,7 +54,9 @@ async def test_operation_exceeds_timeout():
     elapsed = time.time() - start_time
 
     # The operation should be interrupted by the timeout
-    assert elapsed < 0.5  # Should return much faster than the requested sleep time
+    assert (
+        elapsed < 0.5
+    )  # Should return much faster than the requested sleep time
     # Check for timeout in errors list
     assert result.errors and "timeout" in str(result.errors).lower()
 
@@ -140,20 +129,29 @@ async def test_concurrent_operations_with_timeout():
     # Create multiple requests to run concurrently
     requests = [
         ServiceRequest(
-            requests=[ExecutionRequest(operation="sleep", arguments={"seconds": 0.1})]
+            requests=[
+                ExecutionRequest(operation="sleep", arguments={"seconds": 0.1})
+            ]
         ),
         ServiceRequest(
-            requests=[ExecutionRequest(operation="sleep", arguments={"seconds": 0.2})]
+            requests=[
+                ExecutionRequest(operation="sleep", arguments={"seconds": 0.2})
+            ]
         ),
         ServiceRequest(
-            requests=[ExecutionRequest(operation="sleep", arguments={"seconds": 0.3})]
+            requests=[
+                ExecutionRequest(operation="sleep", arguments={"seconds": 0.3})
+            ]
         ),
     ]
 
     # Run all requests concurrently
     start_time = time.time()
     results = await asyncio.gather(
-        *[server._handle_service_request("timeout", request) for request in requests]
+        *[
+            server._handle_service_request("timeout", request)
+            for request in requests
+        ]
     )
     elapsed = time.time() - start_time
 

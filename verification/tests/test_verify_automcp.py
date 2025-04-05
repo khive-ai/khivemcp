@@ -114,14 +114,18 @@ class TestAutoMCPVerifier:
             return result
 
         # Patch the check_environment method
-        with patch.object(AutoMCPVerifier, "check_environment", mock_check_environment):
+        with patch.object(
+            AutoMCPVerifier, "check_environment", mock_check_environment
+        ):
             # Run the test
             verifier = AutoMCPVerifier()
             result = verifier.check_environment()
 
             # Verify results
             assert result.name == "Environment Verification"
-            assert result.passed > 0  # At least Python version check should pass
+            assert (
+                result.passed > 0
+            )  # At least Python version check should pass
             assert result.failed == 0  # No failures expected
 
     def test_check_environment_with_import_error(self):
@@ -144,12 +148,16 @@ class TestAutoMCPVerifier:
             # Check required packages with simulated import error
             required_packages = ["automcp", "pydantic", "mcp"]
             for package in required_packages:
-                result.add_result(f"Package: {package}", False, "Package not found")
+                result.add_result(
+                    f"Package: {package}", False, "Package not found"
+                )
 
             return result
 
         # Patch the check_environment method
-        with patch.object(AutoMCPVerifier, "check_environment", mock_check_environment):
+        with patch.object(
+            AutoMCPVerifier, "check_environment", mock_check_environment
+        ):
             # Run the test
             verifier = AutoMCPVerifier()
             result = verifier.check_environment()
@@ -190,7 +198,8 @@ class TestAutoMCPVerifier:
         # Run the test
         verifier = AutoMCPVerifier()
         with patch(
-            "verification.verify_automcp.ClientSession", return_value=mock_client
+            "verification.verify_automcp.ClientSession",
+            return_value=mock_client,
         ):
             result = await verifier.test_example_group()
 
@@ -205,7 +214,9 @@ class TestAutoMCPVerifier:
     @patch("verification.verify_automcp.AutoMCPVerifier.test_example_group")
     @patch("verification.verify_automcp.AutoMCPVerifier.test_schema_group")
     @patch("verification.verify_automcp.AutoMCPVerifier.test_timeout_group")
-    @patch("verification.verify_automcp.AutoMCPVerifier.test_multi_group_config")
+    @patch(
+        "verification.verify_automcp.AutoMCPVerifier.test_multi_group_config"
+    )
     async def test_run_verification_all(
         self,
         mock_test_multi_group,

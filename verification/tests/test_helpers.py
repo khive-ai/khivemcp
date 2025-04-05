@@ -6,7 +6,10 @@ from datetime import timedelta
 from typing import Any, AsyncGenerator, Optional, Tuple
 
 import anyio
-from anyio.streams.memory import MemoryObjectReceiveStream, MemoryObjectSendStream
+from anyio.streams.memory import (
+    MemoryObjectReceiveStream,
+    MemoryObjectSendStream,
+)
 from mcp.client.session import ClientSession
 from mcp.server import NotificationOptions
 from mcp.server.models import InitializationOptions
@@ -33,12 +36,12 @@ async def create_client_server_memory_streams() -> (
         (read_stream, write_stream)
     """
     # Create streams for both directions
-    server_to_client_send, server_to_client_receive = anyio.create_memory_object_stream[
-        JSONRPCMessage | Exception
-    ](1)
-    client_to_server_send, client_to_server_receive = anyio.create_memory_object_stream[
-        JSONRPCMessage | Exception
-    ](1)
+    server_to_client_send, server_to_client_receive = (
+        anyio.create_memory_object_stream[JSONRPCMessage | Exception](1)
+    )
+    client_to_server_send, client_to_server_receive = (
+        anyio.create_memory_object_stream[JSONRPCMessage | Exception](1)
+    )
 
     client_streams = (server_to_client_receive, client_to_server_send)
     server_streams = (client_to_server_receive, server_to_client_send)
@@ -77,20 +80,26 @@ async def create_connected_automcp_server_and_client_session(
         # Create a cancel scope for the server task
         async with anyio.create_task_group() as tg:
             # Start the server's internal MCP server
-            tg.start_soon(
-                lambda: server.server.run(
+            # The FastMCP.run method only takes 1 or 2 arguments (transport type or transport object)
+            # We need to use a different approach to run the server with the memory streams
+
+            # Create a task to run the server
+            async def run_server():
+                # Use the _mcp_server attribute which has the run method that accepts the streams
+                await server.server._mcp_server.run(
                     server_read,
                     server_write,
                     InitializationOptions(
                         server_name=server.name,
                         server_version="1.0.0",
-                        capabilities=server.server.get_capabilities(
+                        capabilities=server.get_capabilities(
                             notification_options=NotificationOptions(),
                             experimental_capabilities={},
                         ),
                     ),
                 )
-            )
+
+            tg.start_soon(run_server)
 
             try:
                 # Create and initialize the client session

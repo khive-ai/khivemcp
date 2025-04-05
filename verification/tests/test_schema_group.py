@@ -4,7 +4,11 @@ import pytest
 from mcp.types import TextContent
 
 from verification.groups.schema_group import SchemaGroup
-from verification.schemas import ListProcessingSchema, MessageSchema, PersonSchema
+from verification.schemas import (
+    ListProcessingSchema,
+    MessageSchema,
+    PersonSchema,
+)
 
 
 @pytest.mark.asyncio
@@ -12,7 +16,9 @@ async def test_greet_person_direct():
     """Test greet_person operation directly."""
     group = SchemaGroup()
     # Pass schema parameters as keyword arguments
-    result = await group.greet_person(name="John", age=30, email="john@example.com")
+    result = await group.greet_person(
+        name="John", age=30, email="john@example.com"
+    )
     assert "Hello, John!" in result
     assert "30 years old" in result
     assert "john@example.com" in result
@@ -56,7 +62,9 @@ async def test_process_list_direct():
     assert result == ["Item: one", "Item: two"]
 
     # Test with custom prefix and uppercase
-    result = await group.process_list(items=["one", "two"], prefix=">>", uppercase=True)
+    result = await group.process_list(
+        items=["one", "two"], prefix=">>", uppercase=True
+    )
     assert result == [">> ONE", ">> TWO"]
 
 
