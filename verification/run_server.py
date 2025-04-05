@@ -4,7 +4,6 @@ import sys
 from pathlib import Path
 
 from automcp.server import AutoMCPServer
-from automcp.types import GroupConfig
 from automcp.utils import load_config
 
 

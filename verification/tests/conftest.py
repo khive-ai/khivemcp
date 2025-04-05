@@ -1,6 +1,5 @@
 """Test configuration and fixtures for verification package."""
 
-import asyncio
 import contextlib
 from typing import Any, AsyncGenerator, Callable, Tuple
 
