@@ -150,7 +150,7 @@ class AutoMCPVerifier:
             try:
                 # Create server parameters
                 server_params = StdioServerParameters(
-                    command="python",
+                    command=sys.executable,
                     args=["-m", "verification.run_server", str(config_path)],
                 )
                 self.log(f"Starting server with parameters: {server_params}")
@@ -264,7 +264,7 @@ class AutoMCPVerifier:
             try:
                 # Create server parameters
                 server_params = StdioServerParameters(
-                    command="python",
+                    command=sys.executable,
                     args=["-m", "verification.run_server", str(config_path)],
                 )
                 self.log(f"Starting server with parameters: {server_params}")
@@ -398,7 +398,7 @@ class AutoMCPVerifier:
             try:
                 # Create server parameters
                 server_params = StdioServerParameters(
-                    command="python",
+                    command=sys.executable,
                     args=[
                         "-m",
                         "verification.timeout_test",
@@ -516,7 +516,7 @@ class AutoMCPVerifier:
             try:
                 # Create server parameters
                 server_params = StdioServerParameters(
-                    command="python",
+                    command=sys.executable,
                     args=["-m", "verification.run_server", str(config_path)],
                 )
                 self.log(f"Starting server with parameters: {server_params}")

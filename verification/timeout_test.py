@@ -40,7 +40,18 @@ async def main():
     server.groups["timeout"] = timeout_group
 
     # Start the server
-    await server.start()
+    try:
+        await server.start()
+        print(
+            f"Server running with configuration: {config_path} and timeout: {timeout}"
+        )
+        print("Press Ctrl+C to stop")
+        while True:
+            await asyncio.sleep(1)
+    except KeyboardInterrupt:
+        print("\nShutting down server...")
+        await server.stop()
+        print("Server stopped")
 
 
 if __name__ == "__main__":

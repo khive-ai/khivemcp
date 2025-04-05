@@ -19,8 +19,14 @@ async def main():
 
     config_path = Path(sys.argv[1])
     if not config_path.is_absolute():
-        # Fix the path issue - remove duplicate "config" directory
-        config_path = Path(__file__).parent / "config" / config_path
+        # Check if the path already contains 'config'
+        if "config" in str(config_path) and not config_path.exists():
+            # If it contains 'config' but doesn't exist, try using just the filename
+            filename = config_path.name
+            config_path = Path(__file__).parent / "config" / filename
+        elif not config_path.exists():
+            # If it doesn't exist, try prepending the config directory
+            config_path = Path(__file__).parent / "config" / config_path
 
     # Load the configuration from the file
     try:

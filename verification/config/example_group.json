@@ -1,5 +1,11 @@
 {
   "name": "example",
   "description": "Basic example group for AutoMCP verification",
-  "packages": []
+  "packages": [],
+  "groups": {
+    "verification.groups.example_group:ExampleGroup": {
+      "name": "example",
+      "description": "Basic example group for AutoMCP verification"
+    }
+  }
 }
