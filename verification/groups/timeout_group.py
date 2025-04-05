@@ -62,14 +62,23 @@ class TimeoutGroup(ServiceGroup):
         start_time = time.time()
 
         result = 0
+        chunk_size = 100  # Process in smaller chunks to allow timeout checks
+
         for i in range(iterations):
-            if i % (iterations // 10) == 0:
+            if i % (iterations // 10) == 0 or i % chunk_size == 0:
+                # Yield control to event loop more frequently to allow timeout checks
                 progress = (i / iterations) * 100
                 await ctx.report_progress(i, iterations)
                 ctx.info(f"Progress: {progress:.1f}%")
+                # Explicitly yield control to the event loop
+                await asyncio.sleep(0)
 
-            # CPU-intensive work
-            result += sum(j * j for j in range(10000))
+            # CPU-intensive work - reduced workload for faster tests
+            result += sum(j * j for j in range(1000))
+
+            # Yield control every chunk_size iterations
+            if i % chunk_size == chunk_size - 1:
+                await asyncio.sleep(0)  # Yield to event loop without actual delay
 
         total_time = time.time() - start_time
         return f"Completed {iterations} iterations in {total_time:.2f} seconds with result: {result}"

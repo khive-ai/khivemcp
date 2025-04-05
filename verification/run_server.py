@@ -4,6 +4,8 @@ import sys
 from pathlib import Path
 
 from automcp.server import AutoMCPServer
+from automcp.types import GroupConfig
+from automcp.utils import load_config
 
 
 async def main():
@@ -21,26 +23,15 @@ async def main():
         # Fix the path issue - remove duplicate "config" directory
         config_path = Path(__file__).parent / "config" / config_path
 
-    if not config_path.exists():
+    # Load the configuration from the file
+    try:
+        config = load_config(config_path)
+    except FileNotFoundError:
         print(f"Error: Configuration file {config_path} not found")
         sys.exit(1)
-
-    # Load the configuration from the file
-    import json
-
-    import yaml
-
-    if config_path.suffix in [".yaml", ".yml"]:
-        with open(config_path, "r") as f:
-            config_data = yaml.safe_load(f)
-    else:
-        with open(config_path, "r") as f:
-            config_data = json.load(f)
-
-    # Create a GroupConfig from the loaded data
-    from automcp.types import GroupConfig
-
-    config = GroupConfig(**config_data)
+    except ValueError as e:
+        print(f"Error: Failed to load configuration: {e}")
+        sys.exit(1)
 
     server = AutoMCPServer("verification-server", config)
     try:

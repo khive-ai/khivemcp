@@ -46,8 +46,8 @@ async def test_example_group_integration():
         client,
     ):
         # Get the list of available tools
-        tools = await client.list_tools()
-        tool_names = [tool["name"] for tool in tools]
+        tools_result = await client.list_tools()
+        tool_names = [tool.name for tool in tools_result.tools]
 
         # Verify the expected tools are available
         assert "example.hello_world" in tool_names
@@ -99,8 +99,8 @@ async def test_schema_group_integration():
         client,
     ):
         # Get the list of available tools
-        tools = await client.list_tools()
-        tool_names = [tool["name"] for tool in tools]
+        tools_result = await client.list_tools()
+        tool_names = [tool.name for tool in tools_result.tools]
 
         # Verify the expected tools are available
         assert "schema.greet_person" in tool_names
@@ -163,8 +163,8 @@ async def test_timeout_group_integration():
         client,
     ):
         # Get the list of available tools
-        tools = await client.list_tools()
-        tool_names = [tool["name"] for tool in tools]
+        tools_result = await client.list_tools()
+        tool_names = [tool.name for tool in tools_result.tools]
 
         # Verify the expected tools are available
         assert "timeout.sleep" in tool_names
@@ -182,7 +182,7 @@ async def test_timeout_group_integration():
 
         # Test slow_counter operation
         response = await client.call_tool(
-            "timeout.slow_counter", {"count": 3, "delay": 0.1}
+            "timeout.slow_counter", {"limit": 3, "delay": 0.1}
         )
         response_text = response.content[0].text if response.content else ""
         assert "Counted to 3" in response_text
@@ -234,8 +234,8 @@ async def test_multi_group_integration():
         client,
     ):
         # Get the list of available tools
-        tools = await client.list_tools()
-        tool_names = [tool["name"] for tool in tools]
+        tools_result = await client.list_tools()
+        tool_names = [tool.name for tool in tools_result.tools]
 
         # Verify tools from all groups are available
         example_tools = [name for name in tool_names if name.startswith("example.")]
@@ -351,8 +351,8 @@ async def test_specific_group_loading():
         client,
     ):
         # Get the list of available tools
-        tools = await client.list_tools()
-        tool_names = [tool["name"] for tool in tools]
+        tools_result = await client.list_tools()
+        tool_names = [tool.name for tool in tools_result.tools]
 
         # Verify only example group tools are available
         example_tools = [name for name in tool_names if name.startswith("example.")]

@@ -141,9 +141,9 @@ async def test_group_config_parameters():
     """Test group configuration parameter handling."""
     from automcp.types import GroupConfig
 
-    # Create a GroupConfig instance with parameters
+    # Create a GroupConfig instance with config
     config = GroupConfig(
-        name="timeout", description="Timeout group", parameters={"default_delay": 0.5}
+        name="timeout", description="Timeout group", config={"default_delay": 0.5}
     )
     server = AutoMCPServer("test-server", config)
 
