@@ -5,6 +5,23 @@ import mcp.types as types
 from .types import ExecutionRequest, ExecutionResponse
 
 
+class MockContext(types.TextContent):
+    """Mock context for testing operations with progress reporting."""
+
+    def __init__(self):
+        super().__init__(type="text", text="")
+        self.progress_updates = []
+        self.info_messages = []
+
+    def info(self, message):
+        """Record an info message."""
+        self.info_messages.append(message)
+
+    async def report_progress(self, current, total):
+        """Record a progress update."""
+        self.progress_updates.append((current, total))
+
+
 class ServiceGroup:
     """Service group containing operations."""
 
@@ -35,8 +52,20 @@ class ServiceGroup:
             )
 
         try:
-            # Call the operation directly with the arguments
-            result = await operation(**(request.arguments or {}))
+            # Create a context for progress reporting and logging
+            ctx = MockContext()
+
+            # Call the operation directly with the arguments and context
+            args = request.arguments or {}
+
+            # Check if the operation expects a ctx parameter
+            import inspect
+
+            sig = inspect.signature(operation)
+            if "ctx" in sig.parameters:
+                args["ctx"] = ctx
+
+            result = await operation(**args)
             return ExecutionResponse(
                 content=types.TextContent(type="text", text=str(result)), error=None
             )

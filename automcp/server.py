@@ -83,15 +83,34 @@ class AutoMCPServer:
             tools = []
             for group in self.groups.values():
                 for op_name, operation in group.registry.items():
+                    # Extract schema if available
+                    input_schema = (
+                        {}
+                    )  # Always initialize with an empty dict to avoid None
+                    if operation.schema:
+                        try:
+                            # Get JSON schema from the Pydantic model class
+                            # For Pydantic v2, model_json_schema() is a class method
+                            schema_dict = operation.schema.model_json_schema()
+
+                            # Ensure we have a dictionary (required by MCP Tool)
+                            if isinstance(schema_dict, dict):
+                                input_schema = schema_dict
+                            else:
+                                print(
+                                    f"WARNING: Schema for {group.config.name}.{op_name} is not a dictionary: {type(schema_dict)}"
+                                )
+                        except Exception as e:
+                            # Log the error but continue with an empty schema
+                            print(
+                                f"ERROR: Failed to extract schema for {group.config.name}.{op_name}: {e}"
+                            )
+
                     tools.append(
                         types.Tool(
                             name=f"{group.config.name}.{op_name}",
                             description=operation.doc,
-                            inputSchema=(
-                                operation.schema.model_json_schema()
-                                if operation.schema
-                                else None
-                            ),
+                            inputSchema=input_schema,  # This will always be a dict now
                         )
                     )
             return tools
