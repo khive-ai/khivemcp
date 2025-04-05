@@ -1,3 +1,15 @@
+---
+title: Technical Specifications
+created_at: 2024-12-04
+updated_at: 2025-04-05
+tools: ["ChatGPT O1-pro", "ChatGPT DeepResearch"]
+by: Ocean
+version: 1.0
+description: |
+    The technical specification of the AutoMCP project.
+---
+
+
 # AutoMCP Technical Documentation
 
 ## Overview
