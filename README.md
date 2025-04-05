@@ -24,6 +24,7 @@ pip install automcp
 ## Quick Start
 
 1. Create a service group:
+
 ```python
 # my_group.py
 from automcp import ServiceGroup, operation
@@ -47,6 +48,7 @@ class MathGroup(ServiceGroup):
 ```
 
 2. Create configuration:
+
 ```yaml
 # service.yaml
 name: math-service
@@ -61,6 +63,7 @@ groups:
 ```
 
 3. Run the server:
+
 ```bash
 automcp run --config service.yaml
 ```
@@ -68,6 +71,7 @@ automcp run --config service.yaml
 ## Configuration
 
 ### Service Configuration (YAML)
+
 ```yaml
 name: my-service
 description: Service description
@@ -82,6 +86,7 @@ groups:
 ```
 
 ### Group Configuration (JSON)
+
 ```json
 {
   "name": "group-name",
@@ -109,11 +114,13 @@ automcp run --config group.json
 ## Development
 
 ### Running Tests
+
 ```bash
 pytest tests/
 ```
 
 ### Creating New Operations
+
 1. Define input schema using Pydantic
 2. Create operation with @operation decorator
 3. Add operation documentation

@@ -1,14 +1,20 @@
 # AutoMCP Technical Documentation
 
 ## Overview
-AutoMCP is a Model Context Protocol (MCP) server implementation that enables easy creation and deployment of MCP-compatible services. It supports both single-group and multi-group service configurations.
+
+AutoMCP is a Model Context Protocol (MCP) server implementation that enables
+easy creation and deployment of MCP-compatible services. It supports both
+single-group and multi-group service configurations.
 
 ## Architecture
 
 ### Core Components
 
 #### ServiceGroup
-The basic unit of functionality. Each group provides a set of operations decorated with `@operation`:
+
+The basic unit of functionality. Each group provides a set of operations
+decorated with `@operation`:
+
 ```python
 class MyGroup(ServiceGroup):
     @operation(schema=MySchema)
@@ -18,14 +24,18 @@ class MyGroup(ServiceGroup):
 ```
 
 #### Server
+
 Handles MCP protocol integration and request routing:
+
 - Single entry point for all operations
 - Concurrent request execution
 - Timeout handling
 - Error management
 
 #### Configuration System
+
 Two levels of configuration:
+
 1. Service Configuration (YAML)
    ```yaml
    name: my-service
@@ -49,6 +59,7 @@ Two levels of configuration:
 ## Deployment
 
 ### Command Line Interface
+
 ```bash
 # Run service with multiple groups
 automcp run --config service.yaml
@@ -61,18 +72,23 @@ automcp run --config group.json
 ```
 
 ### Integration with Claude
-AutoMCP servers integrate seamlessly with Claude's MCP client through stdio transport.
+
+AutoMCP servers integrate seamlessly with Claude's MCP client through stdio
+transport.
 
 ## Development
 
 ### Creating New Groups
+
 1. Create group class inheriting from ServiceGroup
 2. Define operations using @operation decorator
 3. Specify input schemas using Pydantic models
 4. Create configuration file
 
 ### Testing
+
 Comprehensive test suite available:
+
 - Group operation testing
 - Service configuration testing
 - Concurrent execution testing
@@ -81,18 +97,21 @@ Comprehensive test suite available:
 ## Best Practices
 
 ### Configuration
+
 - Use YAML for service configs (multiple groups)
 - Use JSON for single group configs
 - Keep configurations version controlled
 - Document custom configuration options
 
 ### Operations
+
 - Clear operation documentation
 - Input validation via schemas
 - Proper error handling
 - Reasonable timeouts
 
 ### Deployment
+
 - Use uv for package management
 - Monitor operation timeouts
 - Consider resource limitations
