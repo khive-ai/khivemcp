@@ -3,10 +3,10 @@
 import json
 from datetime import datetime
 
+import mcp.types as mcp_types
 import pytest
 from pydantic import BaseModel
 
-import mcp.types as mcp_types
 from automcp.types import (
     ExecutionRequest,
     ExecutionResponse,
@@ -105,10 +105,19 @@ class TestServiceConfig:
         assert config.description == "Test service description"
         assert len(config.groups) == 1
         assert config.groups["module.path:GroupClass"].name == "group1"
-        assert config.groups["module.path:GroupClass"].description == "Group 1 description"
-        assert config.groups["module.path:GroupClass"].class_path == "module.path:GroupClass"
+        assert (
+            config.groups["module.path:GroupClass"].description
+            == "Group 1 description"
+        )
+        assert (
+            config.groups["module.path:GroupClass"].class_path
+            == "module.path:GroupClass"
+        )
         assert config.packages == ["shared-package1", "shared-package2"]
-        assert config.env_vars == {"SHARED_ENV1": "value1", "SHARED_ENV2": "value2"}
+        assert config.env_vars == {
+            "SHARED_ENV1": "value1",
+            "SHARED_ENV2": "value2",
+        }
 
 
 class TestExecutionRequestResponse:
@@ -156,34 +165,36 @@ class TestModelDump:
         """Test model_dump with string content."""
         # Create a response with a string in content
         response = ExecutionResponse(
-            content=mcp_types.TextContent(type="text", text="Simple string content"),
+            content=mcp_types.TextContent(
+                type="text", text="Simple string content"
+            ),
         )
-        
+
         # Dump the model and check the result
         dumped = response.model_dump()
         assert dumped["content"]["text"] == "Simple string content"
-        
+
     def test_model_dump_with_pydantic_model(self):
         """Test model_dump with a Pydantic model in content.text."""
         # This test requires mocking the behavior since TextContent normally
         # doesn't accept a Pydantic model directly
-        
+
         class TestModel(BaseModel):
             name: str
             value: int
-            
+
         # Create a test model
         test_model = TestModel(name="test", value=42)
-        
+
         # Create a response with text content
         response = ExecutionResponse(
             content=mcp_types.TextContent(type="text", text="placeholder"),
         )
-        
+
         # Manually set the content.text to be a Pydantic model to test the model_dump method
         # This is a test-only scenario to verify the model_dump logic
         response.content.text = test_model
-        
+
         # Now dump the model and verify it handles the Pydantic model correctly
         dumped = response.model_dump()
         assert isinstance(dumped["content"]["text"], str)

@@ -42,13 +42,13 @@ def test_load_config_yaml_service_config(temp_dir):
             }
         },
     }
-    
+
     with open(config_path, "w", encoding="utf-8") as f:
         yaml.dump(service_config, f)
-    
+
     # Load the config
     config = load_config(config_path)
-    
+
     # Verify it's a ServiceConfig
     assert isinstance(config, ServiceConfig)
     assert config.name == "test-service"
@@ -66,13 +66,13 @@ def test_load_config_yaml_group_config(temp_dir):
         "description": "Test group",
         "config": {"setting": "value"},
     }
-    
+
     with open(config_path, "w", encoding="utf-8") as f:
         yaml.dump(group_config, f)
-    
+
     # Load the config
     config = load_config(config_path)
-    
+
     # Verify it's a GroupConfig
     assert isinstance(config, GroupConfig)
     assert config.name == "test-group"
@@ -89,13 +89,13 @@ def test_load_config_json_group_config(temp_dir):
         "description": "Test group",
         "config": {"setting": "value"},
     }
-    
+
     with open(config_path, "w", encoding="utf-8") as f:
         json.dump(group_config, f)
-    
+
     # Load the config
     config = load_config(config_path)
-    
+
     # Verify it's a GroupConfig
     assert isinstance(config, GroupConfig)
     assert config.name == "test-group"
@@ -118,13 +118,13 @@ def test_load_config_json_service_config(temp_dir):
             }
         },
     }
-    
+
     with open(config_path, "w", encoding="utf-8") as f:
         json.dump(service_config, f)
-    
+
     # Load the config
     config = load_config(config_path)
-    
+
     # Verify it's a ServiceConfig
     assert isinstance(config, ServiceConfig)
     assert config.name == "test-service"
@@ -139,7 +139,7 @@ def test_load_config_invalid_yaml(temp_dir):
     config_path = temp_dir / "invalid.yaml"
     with open(config_path, "w", encoding="utf-8") as f:
         f.write("invalid: yaml: content: - [")
-    
+
     with pytest.raises(ConfigFormatError) as excinfo:
         load_config(config_path)
     assert "Invalid configuration file format" in str(excinfo.value)
@@ -151,7 +151,7 @@ def test_load_config_invalid_json(temp_dir):
     config_path = temp_dir / "invalid.json"
     with open(config_path, "w", encoding="utf-8") as f:
         f.write('{"invalid": "json",}')
-    
+
     with pytest.raises(ConfigFormatError) as excinfo:
         load_config(config_path)
     assert "Invalid configuration file format" in str(excinfo.value)
@@ -163,7 +163,7 @@ def test_load_config_invalid_format(temp_dir):
     config_path = temp_dir / "config.txt"
     with open(config_path, "w", encoding="utf-8") as f:
         f.write("Some text content")
-    
+
     with pytest.raises(ConfigFormatError) as excinfo:
         load_config(config_path)
     assert "Unsupported file format" in str(excinfo.value)
@@ -178,10 +178,10 @@ def test_load_config_validation_error(temp_dir):
         "description": "Invalid config",
         "groups": {},
     }
-    
+
     with open(config_path, "w", encoding="utf-8") as f:
         yaml.dump(invalid_config, f)
-    
+
     with pytest.raises(ConfigFormatError) as excinfo:
         load_config(config_path)
     assert "Invalid format for ServiceConfig" in str(excinfo.value)

@@ -2,15 +2,23 @@
 
 import pytest
 from mcp.server.fastmcp import Context
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 
 from automcp.operation import operation
+from automcp.testing.context import MockContext
 
 
 class TestInput(BaseModel):
     """Test input schema."""
 
     value: str
+
+
+class TestOutput(BaseModel):
+    """Test output schema for testing complex return types."""
+
+    result: str
+    status: str = "success"
 
 
 class TestService:
@@ -41,6 +49,11 @@ class TestService:
         """Operation with custom name and policy."""
         return f"Named: {value}"
 
+    @operation(schema=TestInput)
+    async def complex_return_operation(self, data: TestInput):
+        """Operation that returns a complex Pydantic model."""
+        return TestOutput(result=f"Processed: {data.value}")
+
 
 @pytest.fixture
 def service():
@@ -51,7 +64,9 @@ def service():
 @pytest.fixture
 def context():
     """Create test context."""
-    return Context(request_id="test-123")
+    ctx = MockContext()
+    ctx.request_id = "test-123"
+    return ctx
 
 
 async def test_basic_operation(service):
@@ -65,19 +80,34 @@ async def test_schema_operation(service):
     result = await service.schema_operation(value="test")
     assert result == "Validated: test"
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         await service.schema_operation(invalid="test")
 
 
 async def test_context_operation(service, context):
     """Test operation that requires context."""
+    # Test with context as a keyword argument
     result = await service.context_operation("test", ctx=context)
+    assert result == "Context: test-123, Value: test"
+
+    # Test with context as a positional argument
+    result = await service.context_operation("test", context)
     assert result == "Context: test-123, Value: test"
 
 
 async def test_schema_context_operation(service, context):
     """Test operation with both schema and context."""
+    # Test with context as a keyword argument
     result = await service.schema_context_operation(value="test", ctx=context)
+    assert result == "Context: test-123, Validated: test"
+
+    # Test with all keyword arguments
+    result = await service.schema_context_operation(value="test", ctx=context)
+    assert result == "Context: test-123, Validated: test"
+
+    # Test with schema as positional and context as keyword
+    test_input = TestInput(value="test")
+    result = await service.schema_context_operation(test_input, ctx=context)
     assert result == "Context: test-123, Validated: test"
 
 
@@ -111,8 +141,25 @@ async def test_backward_compatibility(service):
     assert result == "Validated: test"
 
     # Context operations should work with or without context
-    result = await service.context_operation("test")  # No context
+    # Create a mock context for this test
+    mock_ctx = MockContext()
+    mock_ctx.request_id = None
+
+    result = await service.context_operation(
+        "test", ctx=mock_ctx
+    )  # With None request_id
     assert result == "Context: None, Value: test"
 
-    result = await service.context_operation("test", ctx=context)  # With context
+    mock_ctx.request_id = "test-123"
+    result = await service.context_operation(
+        "test", ctx=mock_ctx
+    )  # With request_id
     assert result == "Context: test-123, Value: test"
+
+
+async def test_complex_return_type(service):
+    """Test operation that returns a complex Pydantic model."""
+    result = await service.complex_return_operation(value="test")
+    assert isinstance(result, TestOutput)
+    assert result.result == "Processed: test"
+    assert result.status == "success"
