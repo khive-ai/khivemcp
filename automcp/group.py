@@ -1,33 +1,37 @@
-"""Core service group and manager implementation."""
+"""Core service group implementation."""
+
+import inspect
+import json
+import logging
+from typing import Any, Callable, Dict, Optional
 
 import mcp.types as types
+from pydantic import BaseModel, ValidationError
 
+from .exceptions import OperationError
 from .types import ExecutionRequest, ExecutionResponse
 
 
-class MockContext(types.TextContent):
-    """Mock context for testing operations with progress reporting."""
-
-    def __init__(self):
-        super().__init__(type="text", text="")
-        self.progress_updates = []
-        self.info_messages = []
-
-    def info(self, message):
-        """Record an info message."""
-        self.info_messages.append(message)
-
-    async def report_progress(self, current, total):
-        """Record a progress update."""
-        self.progress_updates.append((current, total))
-
-
 class ServiceGroup:
-    """Service group containing operations."""
+    """Base class for service groups containing operations.
+
+    A ServiceGroup is a collection of related operations that can be executed
+    by an AutoMCPServer. Operations are methods decorated with the @operation
+    decorator, which are automatically registered during initialization.
+
+    Attributes:
+        registry: A dictionary mapping operation names to their corresponding methods.
+        config: A dictionary containing the group's configuration.
+    """
 
     def __init__(self):
-        """Initialize the service group and register operations."""
-        self.registry = {}
+        """Initialize the service group and register operations.
+
+        During initialization, all methods decorated with @operation are
+        automatically registered in the registry dictionary.
+        """
+        self.registry: Dict[str, Callable] = {}
+        self.config: Dict[str, Any] = {}  # Store loaded config
 
         # Register operations
         for name in dir(self):
@@ -37,44 +41,71 @@ class ServiceGroup:
 
     @property
     def _is_empty(self) -> bool:
-        """Check if group has any registered operations."""
+        """Check if group has any registered operations.
+
+        Returns:
+            bool: True if the registry is empty, False otherwise.
+        """
         return not bool(self.registry)
 
-    async def _execute(self, request: ExecutionRequest) -> ExecutionResponse:
-        """Execute an operation."""
+    async def execute(self, request: ExecutionRequest) -> ExecutionResponse:
+        """Execute an operation based on the provided request.
+
+        This method looks up the requested operation in the registry,
+        executes it with the provided arguments, and returns the result
+        as an ExecutionResponse.
+
+        Args:
+            request: The execution request containing the operation name and arguments.
+
+        Returns:
+            ExecutionResponse: The result of the operation execution.
+        """
         operation = self.registry.get(request.operation)
         if not operation:
+            error_msg = f"Unknown operation: {request.operation}"
             return ExecutionResponse(
-                content=types.TextContent(
-                    type="text", text=f"Unknown operation: {request.operation}"
-                ),
-                error=f"Unknown operation: {request.operation}",
+                content=types.TextContent(type="text", text=error_msg),
+                error=error_msg,
             )
+
+        # Prepare args
+        args = request.arguments or {}
 
         try:
-            # Create a context for progress reporting and logging
-            ctx = MockContext()
-
-            # Call the operation directly with the arguments and context
-            args = request.arguments or {}
-
-            # Check if the operation expects a ctx parameter
-            import inspect
-
-            sig = inspect.signature(operation)
-            if "ctx" in sig.parameters:
-                args["ctx"] = ctx
-
+            # The @operation decorator handles schema validation and ctx injection
             result = await operation(**args)
+
+            # Convert result to TextContent
+            response_text = ""
+            if isinstance(result, BaseModel):
+                response_text = result.model_dump_json()
+            elif isinstance(result, (dict, list)):
+                response_text = json.dumps(result)
+            elif result is not None:
+                response_text = str(result)
+
             return ExecutionResponse(
-                content=types.TextContent(type="text", text=str(result)), error=None
+                content=types.TextContent(type="text", text=response_text),
+                error=None,
+            )
+
+        except ValidationError as e:
+            # Schema validation error from @operation decorator
+            error_msg = (
+                f"Input validation failed for '{request.operation}': {e}"
+            )
+            logging.error(error_msg)
+            return ExecutionResponse(
+                content=types.TextContent(type="text", text=error_msg),
+                error=error_msg,
             )
         except Exception as e:
-            return ExecutionResponse(
-                content=types.TextContent(type="text", text=str(e)), error=str(e)
+            error_msg = (
+                f"Error during '{request.operation}' execution: {str(e)}"
             )
-
-    # Add public execute method that the server can call
-    async def execute(self, request: ExecutionRequest) -> ExecutionResponse:
-        """Public method to execute an operation."""
-        return await self._execute(request)
+            logging.exception("Operation execution failed:")
+            return ExecutionResponse(
+                content=types.TextContent(type="text", text=error_msg),
+                error=error_msg,
+            )

@@ -46,7 +46,7 @@ def load_config(path: Path) -> Union[ServiceConfig, GroupConfig]:
                 data = json.load(f)
             else:
                 raise ConfigFormatError(f"Unsupported file format: {suffix}")
-                
+
             # Determine if this is a ServiceConfig or GroupConfig based on content
             # ServiceConfig must have a 'groups' key
             if "groups" in data and isinstance(data["groups"], dict):
@@ -65,9 +65,13 @@ def load_config(path: Path) -> Union[ServiceConfig, GroupConfig]:
                         f"Invalid format for GroupConfig: {e_group}"
                     ) from e_group
     except (json.JSONDecodeError, yaml.YAMLError) as e:
-        raise ConfigFormatError(f"Invalid configuration file format: {e}") from e
+        raise ConfigFormatError(
+            f"Invalid configuration file format: {e}"
+        ) from e
     except Exception as e:
         # Catch any other unexpected errors
         if "validation error" in str(e).lower():
-            raise ConfigFormatError(f"Configuration validation error: {e}") from e
+            raise ConfigFormatError(
+                f"Configuration validation error: {e}"
+            ) from e
         raise ConfigFormatError(f"Failed to load configuration: {e}") from e

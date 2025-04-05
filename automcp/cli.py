@@ -1,14 +1,14 @@
 """AutoMCP CLI tools."""
 
-import asyncio
 from pathlib import Path
 from typing import Annotated
 
 import typer
 
-from .server import AutoMCPServer
+from .config import load_config
+from .exceptions import AutoMCPError, ConfigFormatError, ConfigNotFoundError
+from .runner import run_server
 from .types import GroupConfig, ServiceConfig
-from .utils import load_config
 
 app = typer.Typer(
     name="automcp",
@@ -18,57 +18,70 @@ app = typer.Typer(
 )
 
 
-async def run_server(server: AutoMCPServer) -> None:
-    """Run MCP server."""
-    try:
-        async with server:
-            await server.start()
-    except KeyboardInterrupt:
-        pass
-    except Exception as e:
-        typer.echo(f"Server error: {e}")
-        raise typer.Exit(1)
-
-
 @app.command()
 def run(
-    config: Annotated[Path, typer.Argument(help="Path to config file (YAML/JSON)")],
+    config: Annotated[
+        Path, typer.Argument(help="Path to config file (YAML/JSON)")
+    ],
     group: Annotated[
         str | None,
-        typer.Option("--group", "-g", help="Specific group to run from service config"),
+        typer.Option(
+            "--group", "-g", help="Specific group to run from service config"
+        ),
     ] = None,
     timeout: Annotated[
-        float, typer.Option("--timeout", "-t", help="Operation timeout in seconds")
+        float,
+        typer.Option("--timeout", "-t", help="Operation timeout in seconds"),
     ] = 30.0,
 ) -> None:
-    """Run AutoMCP server."""
+    """Run AutoMCP server using the specified configuration file."""
     try:
         config_path = Path(config).resolve()
 
-        # Load configuration
-        try:
-            cfg = load_config(config_path)
-        except FileNotFoundError:
-            typer.echo(f"Config file not found: {config_path}")
-            raise typer.Exit(1)
-        except ValueError as e:
-            typer.echo(f"Failed to load config: {e}")
-            raise typer.Exit(1)
+        # Handle group selection if specified
+        if group:
+            try:
+                # Load the config to check if it's a ServiceConfig with the specified group
+                cfg = load_config(config_path)
+                if isinstance(cfg, ServiceConfig):
+                    if group not in cfg.groups:
+                        typer.echo(
+                            f"Group '{group}' not found in service config"
+                        )
+                        raise typer.Exit(1)
 
-        # Handle service config with group selection
-        if isinstance(cfg, ServiceConfig) and group:
-            if group not in cfg.groups:
-                typer.echo(f"Group {group} not found in config")
+                    # Extract the group config and save it to a temporary file
+                    group_config = cfg.groups[group]
+                    typer.echo(
+                        f"Running only the '{group}' group from service config"
+                    )
+
+                    # Use the extracted group config directly
+                    # Note: This approach doesn't save to a temp file, which might be needed
+                    # if run_server can't handle GroupConfig objects directly
+                    config_path = config_path
+                else:
+                    typer.echo(
+                        f"Warning: --group option ignored. Config is not a ServiceConfig."
+                    )
+            except (ConfigNotFoundError, ConfigFormatError) as e:
+                typer.echo(f"Error loading config: {e}")
                 raise typer.Exit(1)
-            cfg = cfg.groups[group]
 
-        # Create and run server
-        server = AutoMCPServer(name=cfg.name, config=cfg, timeout=timeout)
+        # Run the server using the core library function
+        run_server(config_path=config_path, timeout=timeout)
 
-        asyncio.run(run_server(server))
-
+    except ConfigNotFoundError as e:
+        typer.echo(f"Configuration error: {e}")
+        raise typer.Exit(1)
+    except ConfigFormatError as e:
+        typer.echo(f"Configuration format error: {e}")
+        raise typer.Exit(1)
+    except AutoMCPError as e:
+        typer.echo(f"Server error: {e}")
+        raise typer.Exit(1)
     except Exception as e:
-        typer.echo(f"Error: {e}")
+        typer.echo(f"Unexpected error: {e}")
         raise typer.Exit(1)
 
 

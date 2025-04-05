@@ -81,7 +81,9 @@ async def _run_server_async(config_path: Path, timeout: float = 30.0) -> None:
 
     try:
         # Start the server
-        print(f"Starting AutoMCP server '{server_name}' with configuration: {config_path}")
+        print(
+            f"Starting AutoMCP server '{server_name}' with configuration: {config_path}"
+        )
         await server.start()
         print("Server running. Press Ctrl+C to stop.")
 
