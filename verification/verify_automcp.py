@@ -14,13 +14,10 @@ Usage:
 """
 
 import asyncio
-import json
-import os
 import platform
 import sys
-import time
 from pathlib import Path
-from typing import List, Optional
+from typing import List
 
 import typer
 from rich.console import Console
