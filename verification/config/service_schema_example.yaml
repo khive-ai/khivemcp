@@ -1,0 +1,35 @@
+name: ExampleProcessingService
+description: A service demonstrating multiple groups.
+packages:
+  - pydantic>=2.0
+env_vars:
+  SHARED_API_KEY: "example_shared_key"
+
+groups:
+  data_processor_main: # Unique key for this group instance in the service
+    name: "data-processor" # Name used in tool registration (e.g., data-processor.process_data)
+    class_path: "verification.groups.data_processor_group:DataProcessorGroup"
+    description: "Main data processor instance"
+    packages: [] # Inherits service packages, can add more
+    config:
+      default_report_format: "markdown"
+      max_items_per_request: 500
+    env_vars:
+      GROUP_SPECIFIC_SETTING: "value1"
+
+  data_processor_secondary:
+    name: "data-processor-alt" # Different name for the second instance
+    class_path: "verification.groups.data_processor_group:DataProcessorGroup"
+    description: "Secondary data processor instance with different config"
+    config:
+      default_report_format: "text"
+      max_items_per_request: 100
+    env_vars:
+      GROUP_SPECIFIC_SETTING: "value2"
+
+# Add other groups here using their class_path and configuration
+#  another_group_key:
+#    name: "another-group"
+#    class_path: "my_other_module:AnotherGroup"
+#    description: "Another functional group"
+#    config: { ... }

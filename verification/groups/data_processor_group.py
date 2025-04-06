@@ -1,514 +1,517 @@
-"""Data processor service group implementation for AutoMCP verification."""
+"""Data processor service group implementation - Using AutoMCP wrappers."""
 
 import datetime
 import json
-from typing import Any, Dict, List, Optional, Union
+import re
+import sys
+from typing import Any
 
-from mcp.types import TextContent as Context
 from pydantic import BaseModel, Field
 
-from automcp.group import ServiceGroup
-from automcp.operation import operation
+# Import AutoMCP wrappers
+from automcp.decorators import operation
 
 
-# Input/Output Schemas
+# --- Pydantic Schemas (Copied from previous example for completeness) ---
 class DataItem(BaseModel):
-    """Schema for a single data item with flexible content."""
-
-    id: str = Field(..., description="Unique identifier for the data item")
-    value: Any = Field(..., description="The value of the data item")
-    metadata: Optional[Dict[str, Any]] = Field(
-        None, description="Optional metadata for the data item"
-    )
+    id: str
+    value: Any
+    metadata: dict[str, Any] | None = None
 
 
 class ProcessingParameters(BaseModel):
-    """Schema for data processing parameters."""
-
-    filter_fields: Optional[List[str]] = Field(
-        None, description="Fields to include in the output"
-    )
-    transform_case: Optional[str] = Field(
-        None, description="Case transformation ('upper', 'lower', or None)"
-    )
-    aggregate: Optional[bool] = Field(
-        False, description="Whether to aggregate numeric values"
-    )
-    sort_by: Optional[str] = Field(None, description="Field to sort by")
-    sort_order: Optional[str] = Field("asc", description="Sort order ('asc' or 'desc')")
+    filter_fields: list[str] | None = None
+    transform_case: str | None = None
+    aggregate: bool | None = False
+    sort_by: str | None = None
+    sort_order: str | None = "asc"
 
 
 class DataProcessingSchema(BaseModel):
-    """Schema for data processing operation."""
-
-    data: List[DataItem] = Field(..., description="List of data items to process")
-    parameters: ProcessingParameters = Field(
-        default_factory=ProcessingParameters,
-        description="Parameters for processing the data",
-    )
+    data: list[DataItem]
+    parameters: ProcessingParameters = Field(default_factory=ProcessingParameters)
 
 
 class ReportFormat(BaseModel):
-    """Schema for report formatting options."""
-
-    title: str = Field("Data Processing Report", description="Title of the report")
-    include_summary: bool = Field(
-        True, description="Whether to include a summary section"
-    )
-    include_timestamp: bool = Field(True, description="Whether to include a timestamp")
-    format_type: str = Field(
-        "text", description="Output format type ('text', 'markdown', 'html')"
-    )
+    title: str = "Data Processing Report"
+    include_summary: bool = True
+    include_timestamp: bool = True
+    format_type: str = "text"
 
 
 class ReportGenerationSchema(BaseModel):
-    """Schema for report generation operation."""
-
-    processed_data: Dict[str, Any] = Field(
-        ..., description="The processed data to generate a report for"
-    )
-    format: ReportFormat = Field(
-        default_factory=ReportFormat, description="Formatting options for the report"
-    )
+    processed_data: dict[str, Any]
+    format: ReportFormat = Field(default_factory=ReportFormat)
 
 
 class SchemaDefinition(BaseModel):
-    """Schema for defining a validation schema."""
-
-    type: str = Field(
-        ..., description="Schema type (e.g., 'object', 'array', 'string')"
-    )
-    properties: Optional[Dict[str, Dict[str, Any]]] = Field(
-        None, description="Properties for object types"
-    )
-    required: Optional[List[str]] = Field(
-        None, description="Required properties for object types"
-    )
-    items: Optional[Dict[str, Any]] = Field(None, description="Schema for array items")
-    format: Optional[str] = Field(None, description="Format for string types")
-    minimum: Optional[float] = Field(None, description="Minimum value for number types")
-    maximum: Optional[float] = Field(None, description="Maximum value for number types")
-    pattern: Optional[str] = Field(None, description="Regex pattern for string types")
+    type: str
+    properties: dict[str, dict[str, Any]] | None = None
+    required: list[str] | None = None
+    items: dict[str, Any] | None = None
+    format: str | None = None
+    minimum: float | None = None
+    maximum: float | None = None
+    pattern: str | None = None
 
 
 class SchemaValidationRequestSchema(BaseModel):
-    """Schema for schema validation operation."""
+    data: Any
+    schema_def: SchemaDefinition = Field(..., alias="schema")
 
-    data: Any = Field(..., description="The data to validate")
-    schema: SchemaDefinition = Field(..., description="The schema to validate against")
+    class Config:
+        allow_population_by_field_name = True
 
 
 class ValidationError(BaseModel):
-    """Schema for validation error details."""
-
-    path: str = Field(..., description="Path to the error location in the data")
-    message: str = Field(..., description="Error message")
+    path: str
+    message: str
 
 
 class ValidationResult(BaseModel):
-    """Schema for validation result."""
+    valid: bool
+    errors: list[ValidationError] | None = None
 
-    valid: bool = Field(..., description="Whether the data is valid against the schema")
-    errors: Optional[List[ValidationError]] = Field(
-        None, description="List of validation errors if any"
+
+class ErrorTestSchema(BaseModel):
+    error_type: str = Field(
+        ...,
+        description="Type of error to raise",
+        examples=[
+            "value_error",
+            "type_error",
+            "key_error",
+            "index_error",
+            "runtime_error",
+            "assertion_error",
+        ],
     )
 
 
-class DataProcessorGroup(ServiceGroup):
-    """Service group for data processing operations.
+# --- Service Group Class ---
+class DataProcessorGroup:
+    """Service group using AutoMCP decorators and context."""
 
-    This group demonstrates:
-    1. Pydantic schema validation for inputs
-    2. Progress reporting using Context
-    3. Multiple operation types for data processing
-    """
+    def __init__(self, config: dict | None = None):
+        """Initialize the group. Optionally accepts config from AutoMCP."""
+        self.group_config = config or {}
 
-    @operation(schema=DataProcessingSchema)
-    async def process_data(self, data: DataProcessingSchema, ctx: Context) -> dict:
-        """Process JSON data according to specified parameters.
-
-        Args:
-            data: A DataProcessingSchema object containing the input data and processing parameters
-            ctx: Context object for logging and progress reporting
-
-        Returns:
-            dict: The processed data
-        """
-        ctx.info(
-            f"Processing {len(data.data)} data items with parameters: {data.parameters}"
+        print(
+            f"[DataProcessorGroup] Initialized with config: {self.group_config}",
+            file=sys.stderr,
         )
 
+    # --- Tool Methods ---
+
+    @operation(
+        name="process_data",
+        schema=DataProcessingSchema,
+    )
+    async def process_data(self, *, request: DataProcessingSchema) -> dict:
+        """Process JSON data according to specified parameters"""
         processed_items = []
-        total_items = len(data.data)
+        total_items = len(request.data)
 
-        for i, item in enumerate(data.data):
-            # Report progress
-            await ctx.report_progress(i + 1, total_items)
+        max_items = self.group_config.get("max_items_per_request", float("inf"))
+        if total_items > max_items:
+            # Return an error structure or raise an exception that FastMCP can handle
+            # For now, returning an empty dict with error info might be one way
+            return {"error": f"Exceeded max items limit ({max_items})"}
 
-            # Process the item
-            processed_item = self._process_item(item, data.parameters)
-            processed_items.append(processed_item)
+        for i, item in enumerate(request.data):
+            try:
+                processed_item = self._process_item(item, request.parameters)
+                processed_items.append(processed_item)
+            except Exception as e:
+                pass
+            if (
+                i + 1
+            ) % 10 == 0 or i == total_items - 1:  # Update progress periodically
+                pass
 
-        # Perform aggregation if requested
         result = {"processed_items": processed_items}
-        if data.parameters.aggregate:
-            result["aggregated"] = self._aggregate_data(processed_items)
-
-        ctx.info("Data processing completed successfully")
+        if request.parameters.aggregate:
+            try:
+                result["aggregated"] = self._aggregate_data(processed_items)
+            except Exception as e:
+                pass
         return result
 
-    def _process_item(
-        self, item: DataItem, params: ProcessingParameters
-    ) -> Dict[str, Any]:
-        """Process a single data item according to the parameters."""
-        processed = {"id": item.id}
+    @operation(
+        name="generate_report",
+        schema=ReportGenerationSchema,
+    )
+    async def generate_report(self, *, request: ReportGenerationSchema) -> str:
+        """Generate a formatted report from processed data."""
+        report_format_config = request.format
+        format_type = report_format_config.format_type.lower()
+        default_format = self.group_config.get("default_report_format", "text")
+        if format_type not in ["text", "markdown", "html"]:
+            format_type = default_format
 
-        # Add value with possible transformation
-        if isinstance(item.value, str) and params.transform_case:
-            if params.transform_case.lower() == "upper":
-                processed["value"] = item.value.upper()
-            elif params.transform_case.lower() == "lower":
-                processed["value"] = item.value.lower()
-            else:
-                processed["value"] = item.value
-        else:
-            processed["value"] = item.value
-
-        # Add metadata if present
-        if item.metadata:
-            if params.filter_fields:
-                # Only include specified fields
-                filtered_metadata = {
-                    k: v for k, v in item.metadata.items() if k in params.filter_fields
-                }
-                processed["metadata"] = filtered_metadata
-            else:
-                processed["metadata"] = item.metadata
-
-        return processed
-
-    def _aggregate_data(self, processed_items: List[Dict[str, Any]]) -> Dict[str, Any]:
-        """Aggregate numeric values in the processed data."""
-        numeric_values = []
-        for item in processed_items:
-            if isinstance(item["value"], (int, float)):
-                numeric_values.append(item["value"])
-
-        if not numeric_values:
-            return {}
-
-        return {
-            "count": len(numeric_values),
-            "sum": sum(numeric_values),
-            "average": sum(numeric_values) / len(numeric_values),
-            "min": min(numeric_values),
-            "max": max(numeric_values),
-        }
-
-    @operation(schema=ReportGenerationSchema)
-    async def generate_report(
-        self, config: ReportGenerationSchema, ctx: Context
-    ) -> str:
-        """Generate a formatted report from processed data.
-
-        Args:
-            config: A ReportGenerationSchema object containing the data and report configuration
-            ctx: Context object for logging and progress reporting
-
-        Returns:
-            str: The formatted report as a string
-        """
-        ctx.info(f"Generating report with format: {config.format}")
-
-        # Extract data from processed_data
-        processed_items = config.processed_data.get("processed_items", [])
-        aggregated_data = config.processed_data.get("aggregated", {})
-
-        # Start building the report
-        await ctx.report_progress(1, 3)
+        processed_items = request.processed_data.get("processed_items", [])
+        aggregated_data = request.processed_data.get("aggregated", {})
         report_lines = []
 
-        # Generate report based on format type
-        format_type = config.format.format_type.lower()
-
-        # Add title
+        # 1. Title
+        title = report_format_config.title
         if format_type == "markdown":
-            report_lines.append(f"# {config.format.title}")
-            report_lines.append("")
+            report_lines.extend([f"# {title}", ""])
         elif format_type == "html":
-            report_lines.append(f"<h1>{config.format.title}</h1>")
-        else:  # text
-            report_lines.append(config.format.title)
-            report_lines.append("=" * len(config.format.title))
+            report_lines.append(f"<h1>{title}</h1>")
+        else:
+            report_lines.extend([title, "=" * len(title), ""])
 
-        # Add timestamp if requested
-        if config.format.include_timestamp:
-            timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        # 2. Timestamp
+        if report_format_config.include_timestamp:
+            ts = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S UTC")
             if format_type == "markdown":
-                report_lines.append(f"**Generated:** {timestamp}")
-                report_lines.append("")
+                report_lines.extend([f"**Generated:** {ts}", ""])
             elif format_type == "html":
-                report_lines.append(f"<p><strong>Generated:</strong> {timestamp}</p>")
-            else:  # text
-                report_lines.append(f"Generated: {timestamp}")
-                report_lines.append("")
+                report_lines.append(f"<p><strong>Generated:</strong> {ts}</p>")
+            else:
+                report_lines.extend([f"Generated: {ts}", ""])
 
-        await ctx.report_progress(2, 3)
-
-        # Add summary if requested
-        if config.format.include_summary and processed_items:
+        # 3. Summary
+        if report_format_config.include_summary and processed_items:
+            total_items_str = f"Total items: {len(processed_items)}"
             if format_type == "markdown":
-                report_lines.append("## Summary")
-                report_lines.append("")
-                report_lines.append(f"**Total items:** {len(processed_items)}")
+                report_lines.extend(["## Summary", "", f"**{total_items_str}**", ""])
                 if aggregated_data:
+                    report_lines.extend(["### Aggregated Data", ""])
+                    for k, v in aggregated_data.items():
+                        report_lines.append(f"- **{k.capitalize()}:** {v}")
                     report_lines.append("")
-                    report_lines.append("### Aggregated Data")
-                    report_lines.append("")
-                    for key, value in aggregated_data.items():
-                        report_lines.append(f"- **{key}:** {value}")
-                report_lines.append("")
             elif format_type == "html":
                 report_lines.append("<h2>Summary</h2>")
-                report_lines.append(
-                    f"<p><strong>Total items:</strong> {len(processed_items)}</p>"
-                )
+                report_lines.append(f"<p><strong>{total_items_str}</strong></p>")
                 if aggregated_data:
-                    report_lines.append("<h3>Aggregated Data</h3>")
-                    report_lines.append("<ul>")
-                    for key, value in aggregated_data.items():
-                        report_lines.append(f"<li><strong>{key}:</strong> {value}</li>")
+                    report_lines.append("<h3>Aggregated Data</h3><ul>")
+                    for k, v in aggregated_data.items():
+                        report_lines.append(
+                            f"<li><strong>{k.capitalize()}:</strong> {v}</li>"
+                        )
                     report_lines.append("</ul>")
             else:  # text
-                report_lines.append("Summary")
-                report_lines.append("-------")
-                report_lines.append(f"Total items: {len(processed_items)}")
+                report_lines.extend(["Summary", "-------", total_items_str, ""])
                 if aggregated_data:
-                    report_lines.append("")
                     report_lines.append("Aggregated Data:")
-                    for key, value in aggregated_data.items():
-                        report_lines.append(f"  {key}: {value}")
-                report_lines.append("")
+                    for k, v in aggregated_data.items():
+                        report_lines.append(f"  {k.capitalize()}: {v}")
+                    report_lines.append("")
 
-        # Add data items
+        # 4. Data Items
         if processed_items:
             if format_type == "markdown":
-                report_lines.append("## Data Items")
-                report_lines.append("")
+                report_lines.extend(["## Data Items", ""])
                 for item in processed_items:
-                    report_lines.append(f"### Item: {item.get('id')}")
-                    report_lines.append(f"- **Value:** {item.get('value')}")
-                    if "metadata" in item and item["metadata"]:
+                    report_lines.append(f"### Item ID: {item.get('id', 'N/A')}")
+                    report_lines.append(
+                        f"- **Value:** `{json.dumps(item.get('value'))}`"
+                    )
+                    if item.get("metadata"):
                         report_lines.append("- **Metadata:**")
-                        for meta_key, meta_value in item["metadata"].items():
-                            report_lines.append(f"  - {meta_key}: {meta_value}")
+                        for k, v in item["metadata"].items():
+                            report_lines.append(f"  - `{k}`: `{json.dumps(v)}`")
                     report_lines.append("")
             elif format_type == "html":
                 report_lines.append("<h2>Data Items</h2>")
                 for item in processed_items:
-                    report_lines.append(f"<div class='item'>")
-                    report_lines.append(f"<h3>Item: {item.get('id')}</h3>")
                     report_lines.append(
-                        f"<p><strong>Value:</strong> {item.get('value')}</p>"
+                        f"<div style='border:1px solid #ccc; margin-bottom:10px; padding:10px;'>"
                     )
-                    if "metadata" in item and item["metadata"]:
-                        report_lines.append("<div class='metadata'>")
-                        report_lines.append("<p><strong>Metadata:</strong></p>")
-                        report_lines.append("<ul>")
-                        for meta_key, meta_value in item["metadata"].items():
-                            report_lines.append(f"<li>{meta_key}: {meta_value}</li>")
+                    report_lines.append(f"<h3>Item ID: {item.get('id', 'N/A')}</h3>")
+                    report_lines.append(
+                        f"<p><strong>Value:</strong> <code>{json.dumps(item.get('value'))}</code></p>"
+                    )
+                    if item.get("metadata"):
+                        report_lines.append("<p><strong>Metadata:</strong></p><ul>")
+                        for k, v in item["metadata"].items():
+                            report_lines.append(
+                                f"<li><code>{k}</code>: <code>{json.dumps(v)}</code></li>"
+                            )
                         report_lines.append("</ul>")
-                        report_lines.append("</div>")
                     report_lines.append("</div>")
             else:  # text
-                report_lines.append("Data Items")
-                report_lines.append("---------")
+                report_lines.extend(["Data Items", "----------", ""])
                 for item in processed_items:
-                    report_lines.append(f"Item: {item.get('id')}")
-                    report_lines.append(f"Value: {item.get('value')}")
-                    if "metadata" in item and item["metadata"]:
-                        report_lines.append("Metadata:")
-                        for meta_key, meta_value in item["metadata"].items():
-                            report_lines.append(f"  {meta_key}: {meta_value}")
-                    report_lines.append("")
+                    report_lines.append(f"Item ID: {item.get('id', 'N/A')}")
+                    report_lines.append(f"  Value: {json.dumps(item.get('value'))}")
+                    if item.get("metadata"):
+                        report_lines.append("  Metadata:")
+                        for k, v in item["metadata"].items():
+                            report_lines.append(f"    {k}: {json.dumps(v)}")
+                    report_lines.append("")  # Blank line between items
+        separator = "\n"
+        # HTML needs careful joining, maybe wrap in basic HTML structure?
+        if format_type == "html":
+            return f"<!DOCTYPE html><html><head><title>{report_format_config.title}</title></head><body>{''.join(report_lines)}</body></html>"
 
-        await ctx.report_progress(3, 3)
-        ctx.info("Report generation completed successfully")
-
-        # Join report lines based on format
-        separator = "\n" if format_type != "html" else ""
         return separator.join(report_lines)
 
-    @operation(schema=SchemaValidationRequestSchema)
+    @operation(
+        name="validate_schema",
+        description="Validate input data against a specified schema.",
+        schema=SchemaValidationRequestSchema,
+    )
     async def validate_schema(
-        self, request: SchemaValidationRequestSchema
+        self, *, request: SchemaValidationRequestSchema
     ) -> ValidationResult:
-        """Validate input data against a specified schema.
+        """Validate input data against a specified schema."""
 
-        Args:
-            request: A SchemaValidationRequestSchema object containing the data and schema to validate against
-
-        Returns:
-            ValidationResult: The validation result containing success status and any error messages
-        """
-        errors = []
-
-        # Validate the data against the schema
+        errors: list[ValidationError] = []
+        valid = False
         try:
-            self._validate_data_against_schema(request.data, request.schema, "", errors)
+            self._validate_data_against_schema(
+                request.data, request.schema_def, "", errors
+            )
             valid = len(errors) == 0
         except Exception as e:
             errors.append(
-                ValidationError(path="", message=f"Validation error: {str(e)}")
+                ValidationError(
+                    path="", message=f"Internal validation error: {type(e).__name__}"
+                )
             )
             valid = False
 
         return ValidationResult(valid=valid, errors=errors if errors else None)
+
+    @operation(
+        name="test_error",
+        description="Test operation that raises different types of errors based on input.",
+        schema=ErrorTestSchema,
+    )
+    async def test_error(self, *, request: ErrorTestSchema) -> dict:
+        """
+        Test operation that raises different types of errors based on input.
+
+        Args:
+            request: Schema containing the error type to raise. Options:
+                - "value_error": Raises ValueError
+                - "type_error": Raises TypeError
+                - "key_error": Raises KeyError
+                - "index_error": Raises IndexError
+                - "runtime_error": Raises RuntimeError
+                - "assertion_error": Raises AssertionError
+
+        Returns:
+            A dictionary with the result if no error is raised
+
+        Raises:
+            Various exceptions based on error_type
+        """
+        error_type = request.error_type
+
+        if error_type == "value_error":
+            raise ValueError("Intentional test error: ValueError")
+        elif error_type == "type_error":
+            raise TypeError("Intentional test error: TypeError")
+        elif error_type == "key_error":
+            empty_dict = {}
+            # This will raise KeyError
+            return {"result": empty_dict["nonexistent_key"]}
+        elif error_type == "index_error":
+            empty_list = []
+            # This will raise IndexError
+            return {"result": empty_list[10]}
+        elif error_type == "runtime_error":
+            raise RuntimeError("Intentional test error: RuntimeError")
+        elif error_type == "assertion_error":
+            assert False, "Intentional test error: AssertionError"
+        else:
+            return {"result": f"Unknown error_type: {error_type}"}
+
+    # --- Helper Methods (Keep as they were, ensure they are correct) ---
+    def _process_item(
+        self, item: DataItem, params: ProcessingParameters
+    ) -> dict[str, Any]:
+        """Process a single data item."""
+        processed = {"id": item.id}
+        value = item.value
+        if isinstance(value, str) and params.transform_case:
+            case = params.transform_case.lower()
+            value = (
+                value.upper()
+                if case == "upper"
+                else (value.lower() if case == "lower" else value)
+            )
+        processed["value"] = value
+
+        if item.metadata:
+            if params.filter_fields:
+                processed["metadata"] = {
+                    k: v for k, v in item.metadata.items() if k in params.filter_fields
+                }
+            else:
+                processed["metadata"] = item.metadata
+        return processed
+
+    def _aggregate_data(self, processed_items: list[dict[str, Any]]) -> dict[str, Any]:
+        """Aggregate numeric values."""
+        numeric_values = [
+            item["value"]
+            for item in processed_items
+            if isinstance(item.get("value"), (int, float))
+        ]
+        if not numeric_values:
+            return {}
+        count = len(numeric_values)
+        total = sum(numeric_values)
+        return {
+            "count": count,
+            "sum": total,
+            "average": total / count if count > 0 else 0,
+            "min": min(numeric_values),
+            "max": max(numeric_values),
+        }
 
     def _validate_data_against_schema(
         self,
         data: Any,
         schema: SchemaDefinition,
         path: str,
-        errors: List[ValidationError],
+        errors: list[ValidationError],
     ) -> None:
         """Recursively validate data against a schema definition."""
-        # Check type
         schema_type = schema.type.lower()
 
-        if schema_type == "object":
-            if not isinstance(data, dict):
-                errors.append(
-                    ValidationError(
-                        path=path, message=f"Expected object, got {type(data).__name__}"
-                    )
-                )
-                return
+        # Type checking
+        type_valid = False
+        expected_type_msg = schema_type
+        current_type_name = type(data).__name__
 
-            # Check required properties
+        if schema_type == "object" and isinstance(data, dict):
+            type_valid = True
+        elif schema_type == "array" and isinstance(data, list):
+            type_valid = True
+        elif schema_type == "string" and isinstance(data, str):
+            type_valid = True
+        elif schema_type == "number" and isinstance(data, (int, float)):
+            type_valid = True
+        elif schema_type == "integer" and isinstance(data, int):
+            type_valid = True
+        elif schema_type == "boolean" and isinstance(data, bool):
+            type_valid = True
+        elif schema_type == "null" and data is None:
+            type_valid = True
+
+        if not type_valid:
+            errors.append(
+                ValidationError(
+                    path=path or "$",
+                    message=f"Expected type '{expected_type_msg}', got {current_type_name}",
+                )
+            )
+            return  # Stop validation for this path if type is wrong
+
+        # Further validation based on type
+        if schema_type == "object":
             if schema.required:
-                for required_prop in schema.required:
-                    if required_prop not in data:
+                for req_prop in schema.required:
+                    if req_prop not in data:
                         errors.append(
                             ValidationError(
-                                path=(
-                                    f"{path}.{required_prop}" if path else required_prop
-                                ),
-                                message=f"Required property '{required_prop}' is missing",
+                                path=path or "$",
+                                message=f"Required property '{req_prop}' missing",
                             )
                         )
-
-            # Validate properties
             if schema.properties:
-                for prop_name, prop_schema in schema.properties.items():
+                for prop_name, prop_schema_dict in schema.properties.items():
                     if prop_name in data:
                         prop_path = f"{path}.{prop_name}" if path else prop_name
-                        # Create a SchemaDefinition from the property schema
-                        prop_schema_def = SchemaDefinition(**prop_schema)
-                        self._validate_data_against_schema(
-                            data[prop_name], prop_schema_def, prop_path, errors
-                        )
+                        try:
+                            prop_schema = SchemaDefinition(**prop_schema_dict)
+                            self._validate_data_against_schema(
+                                data[prop_name], prop_schema, prop_path, errors
+                            )
+                        except ValidationError as e_pydantic:
+                            errors.append(
+                                ValidationError(
+                                    path=prop_path,
+                                    message=f"Invalid property schema definition for '{prop_name}': {e_pydantic}",
+                                )
+                            )
+                        except Exception as e:
+                            errors.append(
+                                ValidationError(
+                                    path=prop_path,
+                                    message=f"Error validating property '{prop_name}': {e}",
+                                )
+                            )
 
-        elif schema_type == "array":
-            if not isinstance(data, list):
+        elif schema_type == "array" and schema.items:
+            try:
+                item_schema = SchemaDefinition(**schema.items)
+                for i, item in enumerate(data):
+                    item_path = f"{path}[{i}]"
+                    self._validate_data_against_schema(
+                        item, item_schema, item_path, errors
+                    )
+            except ValidationError as e_pydantic:
                 errors.append(
                     ValidationError(
-                        path=path, message=f"Expected array, got {type(data).__name__}"
+                        path=path or "$",
+                        message=f"Invalid array items schema definition: {e_pydantic}",
                     )
                 )
-                return
-
-            # Validate array items
-            if schema.items:
-                items_schema = SchemaDefinition(**schema.items)
-                for i, item in enumerate(data):
-                    item_path = f"{path}[{i}]" if path else f"[{i}]"
-                    self._validate_data_against_schema(
-                        item, items_schema, item_path, errors
+            except Exception as e:
+                errors.append(
+                    ValidationError(
+                        path=path or "$", message=f"Error validating array items: {e}"
                     )
+                )
 
         elif schema_type == "string":
-            if not isinstance(data, str):
-                errors.append(
-                    ValidationError(
-                        path=path, message=f"Expected string, got {type(data).__name__}"
-                    )
-                )
-                return
-
-            # Validate format
-            if schema.format == "email" and "@" not in data:
-                errors.append(
-                    ValidationError(path=path, message="Invalid email format")
-                )
-
-            # Validate pattern
             if schema.pattern and not self._matches_pattern(data, schema.pattern):
                 errors.append(
                     ValidationError(
-                        path=path,
-                        message=f"String does not match pattern: {schema.pattern}",
+                        path=path or "$",
+                        message=f"Value does not match pattern: {schema.pattern}",
                     )
                 )
+            # Basic email format check
+            if schema.format == "email":
+                if (
+                    not isinstance(data, str)
+                    or "@" not in data
+                    or "." not in data.split("@")[-1]
+                ):
+                    errors.append(
+                        ValidationError(
+                            path=path or "$", message="Invalid email format"
+                        )
+                    )
+            # Add other format checks if needed (date-time, etc.)
 
         elif schema_type in ["number", "integer"]:
-            if not isinstance(data, (int, float)):
+            # Ensure data is numeric (already checked by type_valid)
+            num_data = data
+            if schema.minimum is not None and num_data < schema.minimum:
                 errors.append(
                     ValidationError(
-                        path=path, message=f"Expected number, got {type(data).__name__}"
+                        path=path or "$",
+                        message=f"Value {num_data} is less than minimum {schema.minimum}",
                     )
                 )
-                return
-
-            if schema_type == "integer" and not isinstance(data, int):
+            if schema.maximum is not None and num_data > schema.maximum:
                 errors.append(
                     ValidationError(
-                        path=path,
-                        message=f"Expected integer, got {type(data).__name__}",
-                    )
-                )
-                return
-
-            # Validate minimum
-            if schema.minimum is not None and data < schema.minimum:
-                errors.append(
-                    ValidationError(
-                        path=path,
-                        message=f"Value {data} is less than minimum {schema.minimum}",
-                    )
-                )
-
-            # Validate maximum
-            if schema.maximum is not None and data > schema.maximum:
-                errors.append(
-                    ValidationError(
-                        path=path,
-                        message=f"Value {data} is greater than maximum {schema.maximum}",
-                    )
-                )
-
-        elif schema_type == "boolean":
-            if not isinstance(data, bool):
-                errors.append(
-                    ValidationError(
-                        path=path,
-                        message=f"Expected boolean, got {type(data).__name__}",
-                    )
-                )
-
-        elif schema_type == "null":
-            if data is not None:
-                errors.append(
-                    ValidationError(
-                        path=path, message=f"Expected null, got {type(data).__name__}"
+                        path=path or "$",
+                        message=f"Value {num_data} is greater than maximum {schema.maximum}",
                     )
                 )
 
     def _matches_pattern(self, data: str, pattern: str) -> bool:
-        """Simple pattern matching for string validation."""
-        import re
-
+        """Simple regex pattern matching."""
+        if not isinstance(data, str):  # Should not happen if type validation runs first
+            return False
         try:
-            return bool(re.match(pattern, data))
-        except Exception:
+            # Use re.fullmatch for complete string matching against pattern
+            return bool(re.fullmatch(pattern, data))
+        except re.error as e:
+            # Log regex error, but treat as non-match for validation purposes
+            print(
+                f"[Warning] Invalid regex pattern '{pattern}' encountered during validation: {e}",
+                file=sys.stderr,
+            )
             return False
