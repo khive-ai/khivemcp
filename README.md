@@ -104,16 +104,23 @@ operation decorated function must be `async` and must only take one parameter:
 3. **Add the khivemcp Server to MCP client:**
    ```json
    {
+     "mcpServers": {
+       "data-processor": {
+         "command": "uv",
+         "args": [
+           "run",
+           "python",
+           "-m",
+           "khivemcp.cli",
+           "absolute/path/to/your_group.json"
+         ]
+       }
+     }
+   }
    ```
 
-"mcpServers": { "data-processor": { "command": "uv", "args": [ "run", "python",
-"-m", "khivemcp.cli", "absolute/path/to/your_group.json" ] } } }
-
-```
 _(The server starts, listening via stdio by default, and makes the
 `greeter.hello` and `greeter.wave` MCP operations available.)_
-
-
 
 This quick start now shows the full loop: defining the service with khivemcp,
 running it, configuring a standard MCP client to connect to it, and interacting.
@@ -123,10 +130,10 @@ running it, configuring a standard MCP client to connect to it, and interacting.
 khivemcp uses configuration files (YAML or JSON) to define services.
 
 - **`GroupConfig`:** Defines a single group instance (like `greeter.json`
-above). Requires `name` (MCP tool prefix) and `class_path`.
+  above). Requires `name` (MCP tool prefix) and `class_path`.
 - **`ServiceConfig`:** Defines a service composed of multiple `GroupConfig`
-instances (using YAML is often clearer for this). Allows building complex
-services.
+  instances (using YAML is often clearer for this). Allows building complex
+  services.
 
 _(Refer to the `docs/` directory for detailed configuration options.)_
 
@@ -150,4 +157,3 @@ contribution workflow.
 
 This project is licensed under the MIT License - see the [LICENSE](./LICENSE)
 file for details.
-```
