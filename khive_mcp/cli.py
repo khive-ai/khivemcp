@@ -5,7 +5,7 @@ import importlib
 import inspect
 import sys
 from pathlib import Path
-from typing import Annotated, List, Tuple, Union
+from typing import Annotated
 
 import typer
 

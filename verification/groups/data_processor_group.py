@@ -9,7 +9,8 @@ from typing import Any
 from pydantic import BaseModel, Field
 
 # Import AutoMCP wrappers
-from automcp.decorators import operation
+from khive_mcp.decorators import operation
+from khive_mcp.types import ServiceGroup
 
 
 # --- Pydantic Schemas (Copied from previous example for completeness) ---
@@ -89,12 +90,12 @@ class ErrorTestSchema(BaseModel):
 
 
 # --- Service Group Class ---
-class DataProcessorGroup:
+class DataProcessorGroup(ServiceGroup):
     """Service group using AutoMCP decorators and context."""
 
     def __init__(self, config: dict | None = None):
         """Initialize the group. Optionally accepts config from AutoMCP."""
-        self.group_config = config or {}
+        super().__init__(config=config)
 
         print(
             f"[DataProcessorGroup] Initialized with config: {self.group_config}",

@@ -3,7 +3,6 @@
 import json
 import sys
 from pathlib import Path
-from typing import Union
 
 import yaml
 from pydantic import ValidationError
@@ -26,7 +25,7 @@ def load_config(path: Path) -> ServiceConfig | GroupConfig:
     Raises:
         FileNotFoundError: If the configuration file does not exist.
         ValueError: If the file format is unsupported, content is invalid,
-                    or required fields (like class_path for GroupConfig) are missing.
+            or required fields (like class_path for GroupConfig) are missing.
     """
     if not path.exists():
         raise FileNotFoundError(f"Configuration file not found: {path}")

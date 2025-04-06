@@ -2,7 +2,8 @@
 
 import functools
 import inspect
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 from pydantic import BaseModel
 
@@ -23,10 +24,10 @@ def operation(
 
     Args:
         name: The local name of the operation within the group. If None, the
-              method's name is used. The final MCP tool name will be
-              'group_config_name.local_name'.
+            method's name is used. The final MCP tool name will be
+            'group_config_name.local_name'.
         description: A description for the MCP tool. If None, the method's
-                     docstring is used.
+            docstring is used.
     """
     if name is not None and not isinstance(name, str):
         raise TypeError("operation 'name' must be a string or None.")
