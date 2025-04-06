@@ -2,8 +2,9 @@
 
 import json
 import tempfile
+from collections.abc import Generator
 from pathlib import Path
-from typing import Any, Dict, Generator, Tuple
+from typing import Any, Dict, Tuple
 
 import pytest
 import yaml
@@ -36,7 +37,7 @@ def temp_dir(session_tmp_dir) -> Path:
 
 
 @pytest.fixture
-def sample_group_config() -> Dict[str, Any]:
+def sample_group_config() -> dict[str, Any]:
     """Sample group configuration dictionary."""
     return {
         "name": "test_group",
@@ -49,7 +50,7 @@ def sample_group_config() -> Dict[str, Any]:
 
 
 @pytest.fixture
-def sample_service_config() -> Dict[str, Any]:
+def sample_service_config() -> dict[str, Any]:
     """Sample service configuration dictionary."""
     return {
         "name": "test_service",
@@ -74,7 +75,7 @@ def sample_service_config() -> Dict[str, Any]:
 
 
 @pytest.fixture
-def group_config_file(temp_dir: Path, sample_group_config: Dict[str, Any]) -> Path:
+def group_config_file(temp_dir: Path, sample_group_config: dict[str, Any]) -> Path:
     """Create a temporary YAML file with group configuration."""
     config_file = temp_dir / "test_group_config.yaml"
     config_file.write_text(yaml.dump(sample_group_config))
@@ -82,7 +83,7 @@ def group_config_file(temp_dir: Path, sample_group_config: Dict[str, Any]) -> Pa
 
 
 @pytest.fixture
-def group_config_json_file(temp_dir: Path, sample_group_config: Dict[str, Any]) -> Path:
+def group_config_json_file(temp_dir: Path, sample_group_config: dict[str, Any]) -> Path:
     """Create a temporary JSON file with group configuration."""
     config_file = temp_dir / "test_group_config.json"
     config_file.write_text(json.dumps(sample_group_config))
@@ -90,7 +91,7 @@ def group_config_json_file(temp_dir: Path, sample_group_config: Dict[str, Any]) 
 
 
 @pytest.fixture
-def service_config_file(temp_dir: Path, sample_service_config: Dict[str, Any]) -> Path:
+def service_config_file(temp_dir: Path, sample_service_config: dict[str, Any]) -> Path:
     """Create a temporary YAML file with service configuration."""
     config_file = temp_dir / "test_service_config.yaml"
     config_file.write_text(yaml.dump(sample_service_config))
@@ -98,13 +99,13 @@ def service_config_file(temp_dir: Path, sample_service_config: Dict[str, Any]) -
 
 
 @pytest.fixture
-def valid_group_config(sample_group_config: Dict[str, Any]) -> GroupConfig:
+def valid_group_config(sample_group_config: dict[str, Any]) -> GroupConfig:
     """Return a valid GroupConfig instance."""
     return GroupConfig(**sample_group_config)
 
 
 @pytest.fixture
-def valid_service_config(sample_service_config: Dict[str, Any]) -> ServiceConfig:
+def valid_service_config(sample_service_config: dict[str, Any]) -> ServiceConfig:
     """Return a valid ServiceConfig instance."""
     return ServiceConfig(**sample_service_config)
 
