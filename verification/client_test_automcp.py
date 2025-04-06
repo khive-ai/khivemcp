@@ -304,14 +304,14 @@ async def main():
         # Note: Since the server is already running in a separate terminal,
         # we'll use a new instance for our client testing to avoid interference
         # This is standard practice for client testing
-        server_script_path = os.path.join(
-            os.path.dirname(__file__), "run_data_processor_server.py"
+        config_path = os.path.join(
+            os.path.dirname(__file__), "config/data_processor_group.json"
         )
 
-        # Create server parameters
+        # Create server parameters using the enhanced CLI
         server_params = StdioServerParameters(
             command=sys.executable,  # Use the current Python interpreter
-            args=[server_script_path],
+            args=["-m", "automcp", "run", "--config", config_path, "--mode", "stdio"],
         )
 
         # Connect to a new server instance (simulating connection to the running one)
