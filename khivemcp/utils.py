@@ -1,4 +1,4 @@
-"""Utility functions for loading hiveMCP configurations."""
+"""Utility functions for loading khivemcp configurations."""
 
 import json
 import sys

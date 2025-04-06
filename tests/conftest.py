@@ -1,4 +1,4 @@
-"""Shared fixtures for hivemcp tests."""
+"""Shared fixtures for khivemcp tests."""
 
 import json
 import tempfile
@@ -11,7 +11,7 @@ import yaml
 from mcp.shared.memory import create_connected_server_and_client_session
 from pydantic import BaseModel
 
-from hivemcp.types import GroupConfig, ServiceConfig, ServiceGroup
+from khivemcp.types import GroupConfig, ServiceConfig, ServiceGroup
 
 
 class TestModel(BaseModel):

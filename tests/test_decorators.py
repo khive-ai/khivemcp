@@ -6,7 +6,7 @@ from unittest.mock import AsyncMock, patch
 import pytest
 from pydantic import BaseModel
 
-from hivemcp.decorators import _HIVEMCP_OP_META, operation
+from khivemcp.decorators import _KHIVEMCP_OP_META, operation
 
 
 class TestOperation:
@@ -21,9 +21,9 @@ class TestOperation:
             return {"result": "success"}
 
         # Check metadata
-        assert hasattr(test_func, _HIVEMCP_OP_META)
-        meta = getattr(test_func, _HIVEMCP_OP_META)
-        assert meta["is_hivemcp_operation"] is True
+        assert hasattr(test_func, _KHIVEMCP_OP_META)
+        meta = getattr(test_func, _KHIVEMCP_OP_META)
+        assert meta["is_khivemcp_operation"] is True
         assert meta["local_name"] == "test_func"
         assert "Test docstring." in meta["description"]
 
@@ -40,9 +40,9 @@ class TestOperation:
             return {"result": "success"}
 
         # Check metadata
-        assert hasattr(test_func, _HIVEMCP_OP_META)
-        meta = getattr(test_func, _HIVEMCP_OP_META)
-        assert meta["is_hivemcp_operation"] is True
+        assert hasattr(test_func, _KHIVEMCP_OP_META)
+        meta = getattr(test_func, _KHIVEMCP_OP_META)
+        assert meta["is_khivemcp_operation"] is True
         assert meta["local_name"] == "custom_name"
         assert meta["description"] == "Custom description"
 
@@ -63,9 +63,9 @@ class TestOperation:
             return {"request": request}
 
         # Check metadata
-        assert hasattr(test_func, _HIVEMCP_OP_META)
-        meta = getattr(test_func, _HIVEMCP_OP_META)
-        assert meta["is_hivemcp_operation"] is True
+        assert hasattr(test_func, _KHIVEMCP_OP_META)
+        meta = getattr(test_func, _KHIVEMCP_OP_META)
+        assert meta["is_khivemcp_operation"] is True
         assert "Input schema:" in meta["description"]
 
         # Test with dict request (should convert to model)

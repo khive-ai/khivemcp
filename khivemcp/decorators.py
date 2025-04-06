@@ -1,4 +1,4 @@
-"""Decorators for hiveMCP Service Groups."""
+"""Decorators for khivemcp Service Groups."""
 
 import functools
 import inspect
@@ -8,7 +8,7 @@ from typing import Any
 from pydantic import BaseModel
 
 # Internal metadata attribute key
-_HIVEMCP_OP_META = "__hivemcp_op_meta__"
+_KHIVEMCP_OP_META = "__khivemcp_op_meta__"
 
 
 def operation(
@@ -17,9 +17,9 @@ def operation(
     schema: type[BaseModel] = None,
 ):
     """
-    Decorator to mark an async method in an hiveMCP group class as an operation.
+    Decorator to mark an async method in an khivemcp group class as an operation.
 
-    This attaches metadata used by the hiveMCP server during startup to register
+    This attaches metadata used by the khivemcp server during startup to register
     the method as an MCP tool.
 
     Args:
@@ -37,10 +37,10 @@ def operation(
     def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
         if not inspect.isfunction(func):
             # This might happen if applied to non-methods, although intended for methods
-            raise TypeError("@hivemcp.operation can only decorate functions/methods.")
+            raise TypeError("@khivemcp.operation can only decorate functions/methods.")
         if not inspect.iscoroutinefunction(func):
             raise TypeError(
-                f"@hivemcp.operation requires an async function (`async def`), but got '{func.__name__}'."
+                f"@khivemcp.operation requires an async function (`async def`), but got '{func.__name__}'."
             )
 
         op_name = name or func.__name__
@@ -56,11 +56,11 @@ def operation(
         # Store metadata directly on the function object
         setattr(
             func,
-            _HIVEMCP_OP_META,
+            _KHIVEMCP_OP_META,
             {
                 "local_name": op_name,
                 "description": op_desc,
-                "is_hivemcp_operation": True,  # Explicit marker
+                "is_khivemcp_operation": True,  # Explicit marker
             },
         )
 
@@ -81,11 +81,11 @@ def operation(
 
         # Copy metadata to the wrapper as well, just in case something inspects the wrapper directly
         # (though registration should ideally look at the original func via __wrapped__)
-        # setattr(wrapper, _hivemcp_OP_META, getattr(func, _hivemcp_OP_META))
+        # setattr(wrapper, _khivemcp_OP_META, getattr(func, _khivemcp_OP_META))
         # Update: functools.wraps should handle copying attributes like __doc__, __name__
         # Let's ensure our custom attribute is also copied if needed, though maybe redundant.
-        if hasattr(func, _HIVEMCP_OP_META):
-            setattr(wrapper, _HIVEMCP_OP_META, getattr(func, _HIVEMCP_OP_META))
+        if hasattr(func, _KHIVEMCP_OP_META):
+            setattr(wrapper, _KHIVEMCP_OP_META, getattr(func, _KHIVEMCP_OP_META))
 
         wrapper.doc = func.__doc__
         return wrapper
