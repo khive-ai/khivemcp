@@ -1,4 +1,4 @@
-"""Tests for hivemcp.utils module."""
+"""Tests for khivemcp.utils module."""
 
 import json
 import tempfile
@@ -8,8 +8,8 @@ import pytest
 import yaml
 from pydantic import ValidationError
 
-from hivemcp.types import GroupConfig, ServiceConfig
-from hivemcp.utils import load_config
+from khivemcp.types import GroupConfig, ServiceConfig
+from khivemcp.utils import load_config
 
 
 class TestLoadConfig:

@@ -1,5 +1,5 @@
-# hivemcp/__init__.py
-"""HiveMCP: Configuration-driven MCP server framework using FastMCP."""
+# khivemcp/__init__.py
+"""khivemcp: Configuration-driven MCP server framework using FastMCP."""
 
 # Expose key components for users importing the library
 from .decorators import operation

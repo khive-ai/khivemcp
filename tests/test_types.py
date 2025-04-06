@@ -1,9 +1,9 @@
-"""Tests for hivemcp.types module."""
+"""Tests for khivemcp.types module."""
 
 import pytest
 from pydantic import ValidationError
 
-from hivemcp.types import GroupConfig, ServiceConfig, ServiceGroup
+from khivemcp.types import GroupConfig, ServiceConfig, ServiceGroup
 
 
 class TestGroupConfig:

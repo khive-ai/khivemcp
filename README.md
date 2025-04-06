@@ -1,6 +1,6 @@
-# HiveMCP
+# khivemcp
 
-**HiveMCP** simplifies building complex, configuration-driven **MCP
+**khivemcp** simplifies building complex, configuration-driven **MCP
 (Model-Context Protocol)** services in Python. It acts as a smart wrapper around
 the high-performance `FastMCP` server, enabling you to define your service's
 tools and structure using simple Python classes, decorators, and configuration
@@ -10,24 +10,24 @@ files.
 
 <!-- TODO: Add badges for PyPI Version, Build Status, Test Coverage -->
 
-## What is hiveMCP?
+## What is khivemcp?
 
 Building services that implement the **Model-Context Protocol (MCP)** often
 requires handling server setup, tool registration according to the protocol,
-configuration management, and context passing. hiveMCP streamlines this:
+configuration management, and context passing. khivemcp streamlines this:
 
 1. **Define Logic:** Implement your tools or model interactions as methods
    within standard Python classes (Service Groups).
 2. **Decorate Tools:** Mark methods you want to expose as MCP tools using the
-   simple `@hivemcp.operation` decorator. hiveMCP handles registering them
+   simple `@khivemcp.operation` decorator. khivemcp handles registering them
    correctly with the underlying server.
 3. **Configure Structure:** Define which group classes to load and how to name
    their toolsets (operations in MCP terms) using YAML or JSON files.
-4. **Run:** Use the `hivemcp` command-line tool to load your configuration and
+4. **Run:** Use the `khivemcp` command-line tool to load your configuration and
    instantly run a fully featured FastMCP server implementing MCP, with all your
    tools registered and ready to interact.
 
-hiveMCP manages the dynamic loading, instantiation, correct MCP tool
+khivemcp manages the dynamic loading, instantiation, correct MCP tool
 registration, and server lifecycle, letting you focus on implementing the
 specific tools and logic your MCP service needs to provide.
 
@@ -36,7 +36,7 @@ specific tools and logic your MCP service needs to provide.
 - 🚀 **Configuration-Driven:** Define service structure, group instances, and
   MCP tool naming declaratively via YAML or JSON.
 - ✨ **Decorator-Based Tools:** Expose `async` methods as MCP tools/operations
-  using the intuitive `@hivemcp.operation` decorator.
+  using the intuitive `@khivemcp.operation` decorator.
 - 📦 **Dynamic Loading:** Service group classes are loaded dynamically based on
   your configuration (`class_path`), promoting modularity for different
   toolsets.
@@ -57,7 +57,7 @@ Ensure you have Python 3.10+ and `uv` (or `pip`) installed.
 ```bash
 uv venv
 source .venv/bin/activate
-uv pip install hivemcp
+uv pip install khivemcp
 ```
 
 ## Quick Start
@@ -69,7 +69,7 @@ operation decorated function must be `async` and must only take one parameter:
 1. **Create a Service Group Class (`greeter.py`):**
    ```python
    # file: greeter.py
-   from hivemcp import operation, ServiceGroup
+   from khivemcp import operation, ServiceGroup
    from pydantic import BaseModel
 
    # Optional: Define an input schema using Pydantic
@@ -90,7 +90,7 @@ operation decorated function must be `async` and must only take one parameter:
             return {"action": "*waves*"}
    ```
 
-2. **Create an hiveMCP Configuration File (`greeter.json`):**
+2. **Create an khivemcp Configuration File (`greeter.json`):**
    ```json
    {
      "name": "greeter",
@@ -98,16 +98,16 @@ operation decorated function must be `async` and must only take one parameter:
      "description": "A simple greeting service."
    }
    ```
-   _(This tells hiveMCP to load the `GreeterGroup` class from `greeter.py` and
+   _(This tells khivemcp to load the `GreeterGroup` class from `greeter.py` and
    give its tools the prefix `greeter`.)_
 
-3. **Add the hiveMCP Server to MCP client:**
+3. **Add the khivemcp Server to MCP client:**
    ```json
    {
    ```
 
 "mcpServers": { "data-processor": { "command": "uv", "args": [ "run", "python",
-"-m", "hivemcp.cli", "absolute/path/to/your_group.json" ] } } }
+"-m", "khivemcp.cli", "absolute/path/to/your_group.json" ] } } }
 
 ```
 _(The server starts, listening via stdio by default, and makes the
@@ -115,12 +115,12 @@ _(The server starts, listening via stdio by default, and makes the
 
 
 
-This quick start now shows the full loop: defining the service with hiveMCP,
+This quick start now shows the full loop: defining the service with khivemcp,
 running it, configuring a standard MCP client to connect to it, and interacting.
 
 ### Configuration
 
-hiveMCP uses configuration files (YAML or JSON) to define services.
+khivemcp uses configuration files (YAML or JSON) to define services.
 
 - **`GroupConfig`:** Defines a single group instance (like `greeter.json`
 above). Requires `name` (MCP tool prefix) and `class_path`.
@@ -132,7 +132,7 @@ _(Refer to the `docs/` directory for detailed configuration options.)_
 
 ### Creating Service Groups
 
-Implement logic in Python classes and use `@hivemcp.operation` on `async def`
+Implement logic in Python classes and use `@khivemcp.operation` on `async def`
 methods to expose them as MCP tools (operations). Optionally use Pydantic
 schemas for input validation.
 
@@ -141,7 +141,7 @@ and accessing configuration.)_
 
 ## Contributing
 
-Contributions to the core `hivemcp` library are welcome! Please read the
+Contributions to the core `khivemcp` library are welcome! Please read the
 [**Development Style Guide (`dev_style.md`)**](./dev_style.md) before starting.
 It contains essential information on coding standards, testing, and the
 contribution workflow.

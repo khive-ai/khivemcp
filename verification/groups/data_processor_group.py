@@ -1,4 +1,4 @@
-"""Data processor service group implementation - Using hiveMCP wrappers."""
+"""Data processor service group implementation - Using khiveMCP wrappers."""
 
 import datetime
 import json
@@ -8,8 +8,8 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
-from hivemcp.decorators import operation
-from hivemcp.types import ServiceGroup
+from khivemcp.decorators import operation
+from khivemcp.types import ServiceGroup
 
 
 # --- Pydantic Schemas (Copied from previous example for completeness) ---
@@ -90,10 +90,10 @@ class ErrorTestSchema(BaseModel):
 
 # --- Service Group Class ---
 class DataProcessorGroup(ServiceGroup):
-    """Service group using hiveMCP decorators and context."""
+    """Service group using khiveMCP decorators and context."""
 
     def __init__(self, config: dict | None = None):
-        """Initialize the group. Optionally accepts config from hiveMCP."""
+        """Initialize the group. Optionally accepts config from khiveMCP."""
         super().__init__(config=config)
 
         print(

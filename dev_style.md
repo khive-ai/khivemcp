@@ -6,14 +6,14 @@ tools: ["ChatGPT O1-pro", "ChatGPT DeepResearch", "Gemini-2.5-pro"]
 by: Ocean
 version: 1.2
 description: |
-    A style guide for developers contributing to the hiveMCP project.
+    A style guide for developers contributing to the khivemcp project.
 ---
 
-# hiveMCP Core Development Style Guide
+# khivemcp Core Development Style Guide
 
 This **Dev Style Guide** outlines the coding conventions, testing patterns,
 documentation practices, and recommended workflows for contributing directly to
-the **hiveMCP** core library (`hivemcp/` directory).
+the **khivemcp** core library (`khivemcp/` directory).
 
 ## 1. General Philosophy
 
@@ -26,7 +26,7 @@ the **hiveMCP** core library (`hivemcp/` directory).
    add one distinct piece of functionality. Use Conventional Commits format (see
    Section 7).
 4. **Leverage FastMCP**: Utilize the underlying FastMCP server for core MCP
-   functionality. hiveMCP focuses on orchestration, configuration, dynamic
+   functionality. khivemcp focuses on orchestration, configuration, dynamic
    loading, and the decorator interface.
 
 ---
@@ -42,7 +42,7 @@ the **hiveMCP** core library (`hivemcp/` directory).
   `pyproject.toml`. Code must pass linting.
 - **Imports**:
   - Sorted via Ruff's integrated `isort` functionality.
-  - Group standard library, third-party libraries, and local `hivemcp` modules.
+  - Group standard library, third-party libraries, and local `khivemcp` modules.
 - **Typing**:
   - Use Python type hints for all function/method signatures (arguments and
     return types).
@@ -60,19 +60,19 @@ the **hiveMCP** core library (`hivemcp/` directory).
 - **Pydantic**: Used for configuration validation (`types.py`) and potentially
   internal data structures.
 - **PyYAML**: Used for parsing YAML configuration files (`utils.py`).
-- **FastMCP**: The underlying server library hiveMCP orchestrates.
+- **FastMCP**: The underlying server library khivemcp orchestrates.
 - **Pytest**: Used for all testing.
 
 ---
 
 ## 3. Directory Structure (Core Package)
 
-Focus is on the `hivemcp` library code and associated project files:
+Focus is on the `khivemcp` library code and associated project files:
 
 ```
 repo-root/
 │
-├── hivemcp/               # Main library source code
+├── khivemcp/               # Main library source code
 │   ├── __init__.py
 │   ├── cli.py             # Typer CLI application, orchestration logic
 │   ├── decorators.py      # @operation decorator definition and logic
@@ -104,7 +104,7 @@ repo-root/
    - Constants: `UPPER_SNAKE_CASE`
    - Internal Helpers: Prefix with `_` (e.g., `_load_yaml_file`).
 2. **Decorators**:
-   - The `@hivemcp.operation` decorator is defined in `decorators.py`. Its
+   - The `@khivemcp.operation` decorator is defined in `decorators.py`. Its
      primary role is attaching metadata. Keep runtime logic within it minimal.
 3. **Error Handling**:
    - Raise specific exceptions where appropriate (e.g., `FileNotFoundError`,
@@ -122,7 +122,7 @@ repo-root/
 ## 5. Testing
 
 1. **Framework**: Use **Pytest**. Store tests in the top-level `tests/`
-   directory, mirroring the `hivemcp/` structure.
+   directory, mirroring the `khivemcp/` structure.
 2. **Test Types**:
    - **Unit Tests**: Verify individual functions and methods in isolation (e.g.,
      test `load_config` in `test_utils.py`, test Pydantic models in
@@ -140,7 +140,7 @@ repo-root/
    objects).
 4. **Coverage**:
    - Aim for high test coverage (>80-90%) for core library code. Use
-     `pytest-cov` (`pytest --cov=hivemcp`). Critical paths must be tested.
+     `pytest-cov` (`pytest --cov=khivemcp`). Critical paths must be tested.
 
 ---
 

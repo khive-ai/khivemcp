@@ -1,4 +1,4 @@
-"""HiveMCP Command Line Interface"""
+"""khivemcp Command Line Interface"""
 
 import asyncio
 import importlib
@@ -12,21 +12,21 @@ import typer
 # Use FastMCP server
 from mcp.server.fastmcp import FastMCP
 
-# Import hiveMCP wrappers and config types/loader
-from .decorators import _HIVEMCP_OP_META  # Internal detail for lookup
+# Import khivemcp wrappers and config types/loader
+from .decorators import _KHIVEMCP_OP_META  # Internal detail for lookup
 from .types import GroupConfig, ServiceConfig
 from .utils import load_config
 
 app = typer.Typer(
-    name="hivemcp",
-    help="HiveMCP: Run configuration-driven MCP servers using FastMCP.",
+    name="khivemcp",
+    help="khivemcp: Run configuration-driven MCP servers using FastMCP.",
     add_completion=False,
     no_args_is_help=True,
     pretty_exceptions_show_locals=False,  # Reduce noise on Typer errors
 )
 
 
-async def run_hivemcp_server(config: ServiceConfig | GroupConfig) -> None:
+async def run_khivemcp_server(config: ServiceConfig | GroupConfig) -> None:
     """Initializes and runs the FastMCP server based on loaded configuration."""
 
     server_name = config.name
@@ -73,7 +73,7 @@ async def run_hivemcp_server(config: ServiceConfig | GroupConfig) -> None:
         f"[Server] Found {len(groups_to_load)} group configuration(s).", file=sys.stderr
     )
 
-    # 3. Load Groups and Register Tools using hivemcp Decorator Info
+    # 3. Load Groups and Register Tools using khivemcp Decorator Info
     total_tools_registered = 0
     registered_tool_names = (
         set()
@@ -118,16 +118,16 @@ async def run_hivemcp_server(config: ServiceConfig | GroupConfig) -> None:
                 )
                 continue  # Skip this group if instantiation fails
 
-            # Find and Register Tools based on @hivemcp.decorators.operation
+            # Find and Register Tools based on @khivemcp.decorators.operation
             group_tools_registered = 0
             for member_name, member_value in inspect.getmembers(group_instance):
                 # Check if it's an async method and has our decorator's metadata
                 if inspect.iscoroutinefunction(member_value) and hasattr(
-                    member_value, _HIVEMCP_OP_META
+                    member_value, _KHIVEMCP_OP_META
                 ):
                     # Verify it's the correct marker
-                    op_meta = getattr(member_value, _HIVEMCP_OP_META, {})
-                    if op_meta.get("is_hivemcp_operation") is not True:
+                    op_meta = getattr(member_value, _KHIVEMCP_OP_META, {})
+                    if op_meta.get("is_khivemcp_operation") is not True:
                         continue  # Not our decorator
 
                     local_op_name = op_meta.get("local_name")
@@ -182,7 +182,7 @@ async def run_hivemcp_server(config: ServiceConfig | GroupConfig) -> None:
 
             if group_tools_registered == 0:
                 print(
-                    f"    [Loader] INFO: No methods decorated with @hivemcp.operation found or registered for group '{group_name_from_config}'.",
+                    f"    [Loader] INFO: No methods decorated with @khivemcp.operation found or registered for group '{group_name_from_config}'.",
                     file=sys.stderr,
                 )
             total_tools_registered += group_tools_registered
@@ -205,7 +205,7 @@ async def run_hivemcp_server(config: ServiceConfig | GroupConfig) -> None:
 
     if total_tools_registered == 0:
         print(
-            "[Warning] No hivemcp operations were successfully registered. The server will run but offer no tools.",
+            "[Warning] No khivemcp operations were successfully registered. The server will run but offer no tools.",
             file=sys.stderr,
         )
 
@@ -248,7 +248,7 @@ def run(
     ],
     # Add other CLI options if needed, e.g., --transport=sse
 ) -> None:
-    """Loads configuration and runs the hivemcp server using FastMCP."""
+    """Loads configuration and runs the khivemcp server using FastMCP."""
     try:
         config = load_config(config_file)
     except (FileNotFoundError, ValueError) as e:
@@ -263,19 +263,19 @@ def run(
 
     # Run the main async server function
     try:
-        asyncio.run(run_hivemcp_server(config))
+        asyncio.run(run_khivemcp_server(config))
     except KeyboardInterrupt:
         print("\n[CLI] Server shutdown requested by user.", file=sys.stderr)
         # asyncio.run should handle cleanup, but add explicit cleanup if needed
     except Exception as e:
-        # Catch errors from within run_hivemcp_server if they weren't handled there
+        # Catch errors from within run_khivemcp_server if they weren't handled there
         print(
             f"\n[Error] An unexpected error occurred during server execution: {type(e).__name__}: {e}",
             file=sys.stderr,
         )
         raise typer.Exit(code=1)
     finally:
-        print("[CLI] hivemcp command finished.", file=sys.stderr)
+        print("[CLI] khivemcp command finished.", file=sys.stderr)
 
 
 def main():
