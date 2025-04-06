@@ -109,7 +109,7 @@ class AutoMCPServer:
                     tools.append(
                         types.Tool(
                             name=f"{group.config.name}.{op_name}",
-                            description=operation.doc,
+                            description=operation.doc + str(input_schema),
                             inputSchema=input_schema,  # This will always be a dict now
                         )
                     )
