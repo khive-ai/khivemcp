@@ -1,4 +1,4 @@
-"""Data processor service group implementation - Using AutoMCP wrappers."""
+"""Data processor service group implementation - Using hiveMCP wrappers."""
 
 import datetime
 import json
@@ -8,8 +8,8 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
-# Import AutoMCP wrappers
-from automcp.decorators import operation
+from hivemcp.decorators import operation
+from hivemcp.types import ServiceGroup
 
 
 # --- Pydantic Schemas (Copied from previous example for completeness) ---
@@ -89,12 +89,12 @@ class ErrorTestSchema(BaseModel):
 
 
 # --- Service Group Class ---
-class DataProcessorGroup:
-    """Service group using AutoMCP decorators and context."""
+class DataProcessorGroup(ServiceGroup):
+    """Service group using hiveMCP decorators and context."""
 
     def __init__(self, config: dict | None = None):
-        """Initialize the group. Optionally accepts config from AutoMCP."""
-        self.group_config = config or {}
+        """Initialize the group. Optionally accepts config from hiveMCP."""
+        super().__init__(config=config)
 
         print(
             f"[DataProcessorGroup] Initialized with config: {self.group_config}",

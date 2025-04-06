@@ -1,8 +1,8 @@
-"""Core configuration data models for AutoMCP."""
+"""Core configuration data models for hiveMCP."""
 
-from typing import Any, Dict, List, Optional
+from typing import Any
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 
 
 class GroupConfig(BaseModel):
@@ -32,7 +32,7 @@ class GroupConfig(BaseModel):
         description="Environment variables specific to this group (currently informational, not automatically injected).",
     )
 
-    @validator("class_path")
+    @field_validator("class_path")
     def check_class_path_format(cls, v):
         if ":" not in v or v.startswith(".") or ":" not in v.split(".")[-1]:
             raise ValueError("class_path must be in the format 'module.path:ClassName'")
@@ -58,3 +58,9 @@ class ServiceConfig(BaseModel):
         default_factory=dict,
         description="Shared environment variables for all groups (currently informational, not automatically injected).",
     )
+
+
+class ServiceGroup:
+
+    def __init__(self, config: dict[str, Any] = None):
+        self.group_config = config or {}

@@ -4,16 +4,16 @@ created_at: 2025-04-05
 updated_at: 2025-04-05
 tools: ["ChatGPT O1-pro", "ChatGPT DeepResearch", "Gemini-2.5-pro"]
 by: Ocean
-version: 1.1
+version: 1.2
 description: |
-    A style guide for developers contributing to the AutoMCP project.
+    A style guide for developers contributing to the hiveMCP project.
 ---
 
-# AutoMCP Core Development Style Guide
+# hiveMCP Core Development Style Guide
 
 This **Dev Style Guide** outlines the coding conventions, testing patterns,
 documentation practices, and recommended workflows for contributing directly to
-the **AutoMCP** core library (`automcp/` directory).
+the **hiveMCP** core library (`hivemcp/` directory).
 
 ## 1. General Philosophy
 
@@ -26,7 +26,7 @@ the **AutoMCP** core library (`automcp/` directory).
    add one distinct piece of functionality. Use Conventional Commits format (see
    Section 7).
 4. **Leverage FastMCP**: Utilize the underlying FastMCP server for core MCP
-   functionality. AutoMCP focuses on orchestration, configuration, dynamic
+   functionality. hiveMCP focuses on orchestration, configuration, dynamic
    loading, and the decorator interface.
 
 ---
@@ -42,7 +42,7 @@ the **AutoMCP** core library (`automcp/` directory).
   `pyproject.toml`. Code must pass linting.
 - **Imports**:
   - Sorted via Ruff's integrated `isort` functionality.
-  - Group standard library, third-party libraries, and local `automcp` modules.
+  - Group standard library, third-party libraries, and local `hivemcp` modules.
 - **Typing**:
   - Use Python type hints for all function/method signatures (arguments and
     return types).
@@ -60,19 +60,19 @@ the **AutoMCP** core library (`automcp/` directory).
 - **Pydantic**: Used for configuration validation (`types.py`) and potentially
   internal data structures.
 - **PyYAML**: Used for parsing YAML configuration files (`utils.py`).
-- **FastMCP**: The underlying server library AutoMCP orchestrates.
+- **FastMCP**: The underlying server library hiveMCP orchestrates.
 - **Pytest**: Used for all testing.
 
 ---
 
 ## 3. Directory Structure (Core Package)
 
-Focus is on the `automcp` library code and associated project files:
+Focus is on the `hivemcp` library code and associated project files:
 
 ```
 repo-root/
 │
-├── automcp/               # Main library source code
+├── hivemcp/               # Main library source code
 │   ├── __init__.py
 │   ├── cli.py             # Typer CLI application, orchestration logic
 │   ├── decorators.py      # @operation decorator definition and logic
@@ -104,7 +104,7 @@ repo-root/
    - Constants: `UPPER_SNAKE_CASE`
    - Internal Helpers: Prefix with `_` (e.g., `_load_yaml_file`).
 2. **Decorators**:
-   - The `@automcp.operation` decorator is defined in `decorators.py`. Its
+   - The `@hivemcp.operation` decorator is defined in `decorators.py`. Its
      primary role is attaching metadata. Keep runtime logic within it minimal.
 3. **Error Handling**:
    - Raise specific exceptions where appropriate (e.g., `FileNotFoundError`,
@@ -122,7 +122,7 @@ repo-root/
 ## 5. Testing
 
 1. **Framework**: Use **Pytest**. Store tests in the top-level `tests/`
-   directory, mirroring the `automcp/` structure.
+   directory, mirroring the `hivemcp/` structure.
 2. **Test Types**:
    - **Unit Tests**: Verify individual functions and methods in isolation (e.g.,
      test `load_config` in `test_utils.py`, test Pydantic models in
@@ -140,7 +140,7 @@ repo-root/
    objects).
 4. **Coverage**:
    - Aim for high test coverage (>80-90%) for core library code. Use
-     `pytest-cov` (`pytest --cov=automcp`). Critical paths must be tested.
+     `pytest-cov` (`pytest --cov=hivemcp`). Critical paths must be tested.
 
 ---
 
