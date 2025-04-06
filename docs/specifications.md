@@ -9,7 +9,6 @@ description: |
     The technical specification of the AutoMCP project.
 ---
 
-
 # AutoMCP Technical Documentation
 
 ## Overview
