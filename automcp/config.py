@@ -15,7 +15,7 @@ from .exceptions import ConfigFormatError, ConfigNotFoundError
 from .types import GroupConfig, ServiceConfig
 
 
-def load_config(path: Path) -> Union[ServiceConfig, GroupConfig]:
+def load_config(path: Path) -> ServiceConfig | GroupConfig:
     """
     Load configuration from a YAML or JSON file.
 
@@ -39,7 +39,7 @@ def load_config(path: Path) -> Union[ServiceConfig, GroupConfig]:
 
     try:
         suffix = path.suffix.lower()
-        with open(path, "r", encoding="utf-8") as f:
+        with open(path, encoding="utf-8") as f:
             if suffix in [".yaml", ".yml"]:
                 data = yaml.safe_load(f)
             elif suffix == ".json":

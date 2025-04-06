@@ -379,7 +379,7 @@ async def test_data_processor_group_integration():
     """Test end-to-end functionality of DataProcessorGroup through MCP protocol."""
     # Load the JSON file
     config_path = "verification/config/data_processor_group.json"
-    with open(config_path, "r") as f:
+    with open(config_path) as f:
         config_data = json.load(f)
 
     # Create a GroupConfig from the loaded data

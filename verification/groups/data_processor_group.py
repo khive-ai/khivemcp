@@ -17,7 +17,7 @@ class DataItem(BaseModel):
 
     id: str = Field(..., description="Unique identifier for the data item")
     value: Any = Field(..., description="The value of the data item")
-    metadata: Optional[Dict[str, Any]] = Field(
+    metadata: dict[str, Any] | None = Field(
         None, description="Optional metadata for the data item"
     )
 
@@ -25,17 +25,17 @@ class DataItem(BaseModel):
 class ProcessingParameters(BaseModel):
     """Schema for data processing parameters."""
 
-    filter_fields: Optional[List[str]] = Field(
+    filter_fields: list[str] | None = Field(
         None, description="Fields to include in the output"
     )
-    transform_case: Optional[str] = Field(
+    transform_case: str | None = Field(
         None, description="Case transformation ('upper', 'lower', or None)"
     )
-    aggregate: Optional[bool] = Field(
+    aggregate: bool | None = Field(
         False, description="Whether to aggregate numeric values"
     )
-    sort_by: Optional[str] = Field(None, description="Field to sort by")
-    sort_order: Optional[str] = Field(
+    sort_by: str | None = Field(None, description="Field to sort by")
+    sort_order: str | None = Field(
         "asc", description="Sort order ('asc' or 'desc')"
     )
 
@@ -43,7 +43,7 @@ class ProcessingParameters(BaseModel):
 class DataProcessingSchema(BaseModel):
     """Schema for data processing operation."""
 
-    data: List[DataItem] = Field(
+    data: list[DataItem] = Field(
         ..., description="List of data items to process"
     )
     parameters: ProcessingParameters = Field(
@@ -72,7 +72,7 @@ class ReportFormat(BaseModel):
 class ReportGenerationSchema(BaseModel):
     """Schema for report generation operation."""
 
-    processed_data: Dict[str, Any] = Field(
+    processed_data: dict[str, Any] = Field(
         ..., description="The processed data to generate a report for"
     )
     format: ReportFormat = Field(
@@ -87,23 +87,23 @@ class SchemaDefinition(BaseModel):
     type: str = Field(
         ..., description="Schema type (e.g., 'object', 'array', 'string')"
     )
-    properties: Optional[Dict[str, Dict[str, Any]]] = Field(
+    properties: dict[str, dict[str, Any]] | None = Field(
         None, description="Properties for object types"
     )
-    required: Optional[List[str]] = Field(
+    required: list[str] | None = Field(
         None, description="Required properties for object types"
     )
-    items: Optional[Dict[str, Any]] = Field(
+    items: dict[str, Any] | None = Field(
         None, description="Schema for array items"
     )
-    format: Optional[str] = Field(None, description="Format for string types")
-    minimum: Optional[float] = Field(
+    format: str | None = Field(None, description="Format for string types")
+    minimum: float | None = Field(
         None, description="Minimum value for number types"
     )
-    maximum: Optional[float] = Field(
+    maximum: float | None = Field(
         None, description="Maximum value for number types"
     )
-    pattern: Optional[str] = Field(
+    pattern: str | None = Field(
         None, description="Regex pattern for string types"
     )
 
@@ -132,7 +132,7 @@ class ValidationResult(BaseModel):
     valid: bool = Field(
         ..., description="Whether the data is valid against the schema"
     )
-    errors: Optional[List[ValidationError]] = Field(
+    errors: list[ValidationError] | None = Field(
         None, description="List of validation errors if any"
     )
 
@@ -184,7 +184,7 @@ class DataProcessorGroup(ServiceGroup):
 
     def _process_item(
         self, item: DataItem, params: ProcessingParameters
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Process a single data item according to the parameters."""
         processed = {"id": item.id}
 
@@ -215,8 +215,8 @@ class DataProcessorGroup(ServiceGroup):
         return processed
 
     def _aggregate_data(
-        self, processed_items: List[Dict[str, Any]]
-    ) -> Dict[str, Any]:
+        self, processed_items: list[dict[str, Any]]
+    ) -> dict[str, Any]:
         """Aggregate numeric values in the processed data."""
         numeric_values = []
         for item in processed_items:
@@ -411,7 +411,7 @@ class DataProcessorGroup(ServiceGroup):
         data: Any,
         schema: SchemaDefinition,
         path: str,
-        errors: List[ValidationError],
+        errors: list[ValidationError],
     ) -> None:
         """Recursively validate data against a schema definition."""
         # Check type

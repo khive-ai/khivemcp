@@ -731,7 +731,7 @@ class AutoMCPVerifier:
 
     async def run_verification(
         self, test_type: str = "all", timeout: float = 1.0
-    ) -> List[VerificationResult]:
+    ) -> list[VerificationResult]:
         """Run verification tests based on the test type."""
         self.results = []
 

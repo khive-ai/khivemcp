@@ -163,6 +163,5 @@ cython_debug/
 
 .python-version
 *.DS_Store
-dev/
 _servers/
 *data/

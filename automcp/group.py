@@ -3,7 +3,8 @@
 import inspect
 import json
 import logging
-from typing import Any, Callable, Dict, Optional
+from collections.abc import Callable
+from typing import Any, Dict, Optional
 
 import mcp.types as types
 from pydantic import BaseModel, ValidationError
@@ -30,8 +31,8 @@ class ServiceGroup:
         During initialization, all methods decorated with @operation are
         automatically registered in the registry dictionary.
         """
-        self.registry: Dict[str, Callable] = {}
-        self.config: Dict[str, Any] = {}  # Store loaded config
+        self.registry: dict[str, Callable] = {}
+        self.config: dict[str, Any] = {}  # Store loaded config
 
         # Register operations
         for name in dir(self):
@@ -71,6 +72,17 @@ class ServiceGroup:
 
         # Prepare args
         args = request.arguments or {}
+
+        # If we have a context in the request, add it to the arguments
+        if request.context:
+            # Find the parameter name that requires context
+            sig = inspect.signature(operation)
+            for param_name, param in sig.parameters.items():
+                if param_name == "ctx" or str(param.annotation).endswith(
+                    "Context"
+                ):
+                    args[param_name] = request.context
+                    break
 
         try:
             # The @operation decorator handles schema validation and ctx injection

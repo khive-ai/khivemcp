@@ -22,7 +22,7 @@ async def test_load_single_group_from_json():
     )
 
     # Load the JSON file
-    with open(config_path, "r") as f:
+    with open(config_path) as f:
         config_data = json.load(f)
 
     # Create a GroupConfig from the loaded data
@@ -55,7 +55,7 @@ async def test_load_multi_group_from_yaml():
     config_path = Path(__file__).parent.parent / "config" / "multi_group.yaml"
 
     # Load the YAML file
-    with open(config_path, "r") as f:
+    with open(config_path) as f:
         config_data = yaml.safe_load(f)
 
     # Create a ServiceConfig from the loaded data
@@ -120,7 +120,7 @@ async def test_load_specific_group_from_yaml():
     config_path = Path(__file__).parent.parent / "config" / "multi_group.yaml"
 
     # Load the YAML file to get the group config
-    with open(config_path, "r") as f:
+    with open(config_path) as f:
         config_data = yaml.safe_load(f)
 
     # Extract just the schema group configuration

@@ -32,7 +32,7 @@ from rich.panel import Panel
 console = Console()
 
 
-async def list_available_tools(client: ClientSession) -> List[str]:
+async def list_available_tools(client: ClientSession) -> list[str]:
     """List all available tools provided by the server."""
     console.print("[bold]Listing available tools...[/bold]")
 
@@ -46,7 +46,7 @@ async def list_available_tools(client: ClientSession) -> List[str]:
     return tool_names
 
 
-async def process_data_example(client: ClientSession) -> Dict[str, Any]:
+async def process_data_example(client: ClientSession) -> dict[str, Any]:
     """Call the process_data operation with example data."""
     console.print("\n[bold cyan]Testing process_data operation:[/bold cyan]")
 
@@ -130,7 +130,7 @@ async def process_data_example(client: ClientSession) -> Dict[str, Any]:
 
 
 async def generate_report_example(
-    client: ClientSession, processed_data: Dict[str, Any]
+    client: ClientSession, processed_data: dict[str, Any]
 ) -> str:
     """Call the generate_report operation with processed data."""
     console.print(

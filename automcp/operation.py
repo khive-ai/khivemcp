@@ -1,18 +1,9 @@
 """Operation decorator for service groups."""
 
 import inspect
+from collections.abc import Callable
 from functools import wraps
-from typing import (
-    Any,
-    Callable,
-    Dict,
-    List,
-    Optional,
-    Type,
-    TypeVar,
-    Union,
-    cast,
-)
+from typing import Any, Dict, List, Optional, Type, TypeVar, Union, cast
 
 from pydantic import BaseModel, ValidationError
 
@@ -31,9 +22,9 @@ except (ImportError, AttributeError):
 
 
 def operation(
-    schema: Optional[Type[BaseModel]] = None,
-    name: Optional[str] = None,
-    policy: Optional[str] = None,
+    schema: type[BaseModel] | None = None,
+    name: str | None = None,
+    policy: str | None = None,
 ) -> Callable:
     """Decorator for service operations.
 
@@ -128,21 +119,31 @@ def operation(
                         ctx_param_index = i
                         break
 
-                if ctx_param_index is not None and len(args) > ctx_param_index:
+                # Only consider ctx as positionally provided if it's at the *exact* position
+                if (
+                    ctx_param_index is not None
+                    and len(args) == ctx_param_index + 1
+                ):
                     has_positional_ctx = True
 
-                # Only add context to kwargs if it's not already provided positionally or in kwargs
-                if not has_positional_ctx and ctx_param_name not in kwargs:
-                    # Provide a default context if not provided
-                    try:
-                        # Try to import MockContext for testing
-                        from .testing.context import MockContext
+                # Only add context to kwargs if it's not already provided in kwargs
+                if ctx_param_name not in kwargs:
+                    # If we have more positional args than expected but ctx is not explicitly
+                    # at the right position, we should not inject a context
+                    if not (
+                        ctx_param_index is not None
+                        and len(args) > ctx_param_index
+                    ):
+                        # Provide a default context if not provided
+                        try:
+                            # Try to import MockContext for testing
+                            from .testing.context import MockContext
 
-                        mock_ctx = MockContext()
-                        kwargs[ctx_param_name] = mock_ctx
-                    except ImportError:
-                        # Fallback to None if MockContext is not available
-                        kwargs[ctx_param_name] = None
+                            mock_ctx = MockContext()
+                            kwargs[ctx_param_name] = mock_ctx
+                        except ImportError:
+                            # Fallback to None if MockContext is not available
+                            kwargs[ctx_param_name] = None
 
             # Handle schema validation if provided
             if schema and schema_param_name:

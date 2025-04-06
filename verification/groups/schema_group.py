@@ -37,7 +37,7 @@ class SchemaGroup(ServiceGroup):
         return " ".join(result)
 
     @operation(schema=ListProcessingSchema)
-    async def process_list(self, data: ListProcessingSchema) -> List[str]:
+    async def process_list(self, data: ListProcessingSchema) -> list[str]:
         """Process a list of items according to the parameters."""
         result = []
         for item in data.items:

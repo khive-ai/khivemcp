@@ -32,23 +32,23 @@ class GroupConfig(BaseModel):
     name: str = Field(
         ..., description="Group name (must be unique within a service)"
     )
-    description: Optional[str] = Field(
+    description: str | None = Field(
         None,
         description="Human-readable description of the group's purpose and functionality",
     )
-    packages: List[str] = Field(
+    packages: list[str] = Field(
         default_factory=list,
         description="Required Python packages for this group to function properly",
     )
-    config: Dict[str, Any] = Field(
+    config: dict[str, Any] = Field(
         default_factory=dict,
         description="Group-specific configuration dictionary passed to the ServiceGroup instance",
     )
-    env_vars: Dict[str, str] = Field(
+    env_vars: dict[str, str] = Field(
         default_factory=dict,
         description="Environment variables required by this group",
     )
-    class_path: Optional[str] = Field(
+    class_path: str | None = Field(
         None,
         description="Optional path to the ServiceGroup implementation (e.g., 'my_service.groups:MyGroup') when loading a single group directly",
     )
@@ -68,19 +68,19 @@ class ServiceConfig(BaseModel):
     name: str = Field(
         ..., description="Service name used to identify the MCP server"
     )
-    description: Optional[str] = Field(
+    description: str | None = Field(
         None,
         description="Human-readable description of the service's purpose and functionality",
     )
-    groups: Dict[str, GroupConfig] = Field(
+    groups: dict[str, GroupConfig] = Field(
         ...,
         description="Group configurations keyed by class path (e.g., 'my_service.groups:MyGroup')",
     )
-    packages: List[str] = Field(
+    packages: list[str] = Field(
         default_factory=list,
         description="Shared Python packages required by all groups in this service",
     )
-    env_vars: Dict[str, str] = Field(
+    env_vars: dict[str, str] = Field(
         default_factory=dict,
         description="Shared environment variables required by all groups in this service",
     )
@@ -105,9 +105,13 @@ class ExecutionRequest(BaseModel):
         ...,
         description="Operation name to execute (must match an @operation-decorated method)",
     )
-    arguments: Optional[Dict[str, Any]] = Field(
+    arguments: dict[str, Any] | None = Field(
         None,
         description="Operation arguments as key-value pairs matching the operation's schema",
+    )
+    context: types.TextContent | None = Field(
+        None,
+        description="MCP context object for operations that require context",
     )
 
 
@@ -132,12 +136,12 @@ class ExecutionResponse(BaseModel):
         ...,
         description="Operation result content formatted as MCP TextContent",
     )
-    error: Optional[str] = Field(
+    error: str | None = Field(
         None,
         description="Error message if execution failed, None if successful",
     )
 
-    def model_dump(self) -> Dict[str, Any]:
+    def model_dump(self) -> dict[str, Any]:
         """
         Custom dump to handle Pydantic models in content.
 
@@ -163,7 +167,7 @@ class ServiceRequest(BaseModel):
     multiple operations in a single request.
     """
 
-    requests: List[ExecutionRequest] = Field(
+    requests: list[ExecutionRequest] = Field(
         ..., description="List of execution requests to process"
     )
 
@@ -184,7 +188,7 @@ class ServiceResponse(BaseModel):
         ...,
         description="Combined execution results formatted as MCP TextContent",
     )
-    errors: Optional[List[str]] = Field(
+    errors: list[str] | None = Field(
         None,
         description="List of execution errors, None if all operations succeeded",
     )

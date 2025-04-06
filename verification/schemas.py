@@ -8,7 +8,7 @@ class PersonSchema(BaseModel):
 
     name: str = Field(..., description="Person's name")
     age: int = Field(..., description="Person's age")
-    email: Optional[str] = Field(None, description="Person's email address")
+    email: str | None = Field(None, description="Person's email address")
 
 
 class MessageSchema(BaseModel):
@@ -23,8 +23,8 @@ class MessageSchema(BaseModel):
 class ListProcessingSchema(BaseModel):
     """Schema for processing a list of items."""
 
-    items: List[str] = Field(..., description="List of items to process")
-    prefix: Optional[str] = Field(
+    items: list[str] = Field(..., description="List of items to process")
+    prefix: str | None = Field(
         "Item:", description="Prefix to add to each item"
     )
     uppercase: bool = Field(
