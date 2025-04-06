@@ -4,234 +4,203 @@ created_at: 2025-04-05
 updated_at: 2025-04-05
 tools: ["ChatGPT O1-pro", "ChatGPT DeepResearch", "Gemini-2.5-pro"]
 by: Ocean
-version: 1.0
+version: 1.1
 description: |
     A style guide for developers contributing to the AutoMCP project.
 ---
 
-```
-Below is a sample `dev_style.md` document that you can adapt or refine for your specific project needs. It aims to provide a central place for developers to understand coding conventions, formatting rules, naming standards, documentation styles, and testing guidelines. By adhering to these guidelines, your team ensures consistency, maintainability, and clarity across the entire codebase.
-```
+# AutoMCP Core Development Style Guide
 
-# Dev Style Guide
-
-This document outlines our **coding standards and practices** for all
-contributors to the AutoMCP project. By following these guidelines, we maintain
-a clean, consistent, and predictable codebase.
+This **Dev Style Guide** outlines the coding conventions, testing patterns,
+documentation practices, and recommended workflows for contributing directly to
+the **AutoMCP** core library (`automcp/` directory).
 
 ## 1. General Philosophy
 
-1. **Readability First**\
-   Code should be self-explanatory, well-structured, and consistently formatted.
-   Even if a particular code path is “clever,” prioritize clarity over
-   cleverness.
-
-2. **Consistency**\
-   When in doubt, match the style already established in the codebase.
-   Consistency makes the project easier to navigate and maintain.
-
-3. **Small, Focused Commits**\
-   Each commit should address a single concern. Avoid mixing refactors, feature
-   additions, and unrelated fixes in one commit.
+1. **Clarity Over Cleverness**: Write readable and straightforward code. Comment
+   complex sections where necessary.
+2. **Consistency**: Follow existing patterns in the codebase for file layout,
+   naming, docstrings, and tests. This aids collaboration, especially with LLM
+   contributors.
+3. **Small, Focused Commits**: Each commit should ideally address one issue or
+   add one distinct piece of functionality. Use Conventional Commits format (see
+   Section 7).
+4. **Leverage FastMCP**: Utilize the underlying FastMCP server for core MCP
+   functionality. AutoMCP focuses on orchestration, configuration, dynamic
+   loading, and the decorator interface.
 
 ---
 
-## 2. Language & Framework Conventions
+## 2. Language & Framework
 
 ### 2.1 Python
 
-- **Python Version**: We target Python 3.10+ unless otherwise specified.
-- **Formatting**: Use **Black** (version pinned in `pyproject.toml`) for code
-  formatting.
-  - Run `black .` (or via pre-commit hooks) before pushing.
+- **Version**: Target Python 3.10+ (Verify based on `pyproject.toml`).
+- **Formatting**: Use **Black** with default settings (`ruff format .`).
+  Configuration is in `pyproject.toml`.
+- **Linting**: Use **Ruff** (`ruff check . --fix`). Enforce rules defined in
+  `pyproject.toml`. Code must pass linting.
 - **Imports**:
-  - Order imports as recommended by **isort** with `--profile black`.
-  - Group standard library, third-party, and local imports separately.
+  - Sorted via Ruff's integrated `isort` functionality.
+  - Group standard library, third-party libraries, and local `automcp` modules.
 - **Typing**:
-  - Use modern Python type hints.
-  - For new code, prefer explicit types for function arguments and return
-    values.
+  - Use Python type hints for all function/method signatures (arguments and
+    return types).
+  - Use standard types from the `typing` module.
+  - Type variables where ambiguity exists. Check with `mypy .` or Ruff's type
+    checking capabilities periodically.
 - **Docstrings**:
-  - Follow either
-    [Google Style docstrings](https://google.github.io/styleguide/pyguide.html#38-comments-and-docstrings)
-    or reStructuredText style that is Sphinx-compatible.
-  - Every public function/class **must** have a docstring describing usage,
-    parameters, return types, and exceptions raised.
-- **Async/Concurrency**:
-  - If a function performs I/O or blocking tasks, consider using `async` or
-    spawning sub-tasks in a way that doesn’t block the main event loop.
-  - Where relevant (e.g., CPU-bound tasks), yield control frequently
-    (`await asyncio.sleep(0)`) if not using a separate thread/process.
+  - Use **Google style** docstrings for modules, classes, functions, and
+    methods. Ensure they cover purpose, Args, Returns, and Raises where
+    applicable.
 
-### 2.2 Other Languages
+### 2.2 Core Libraries
 
-- **Rust / TypeScript**: If you commit Rust or TypeScript code, follow official
-  style or the community standard lints (e.g., `cargo fmt`, `tsc` checks).
-- Keep these style guidelines **aligned in spirit** with our Python guidelines
-  (e.g., consistent naming, doc comments).
+- **Typer**: Used for the command-line interface (`cli.py`).
+- **Pydantic**: Used for configuration validation (`types.py`) and potentially
+  internal data structures.
+- **PyYAML**: Used for parsing YAML configuration files (`utils.py`).
+- **FastMCP**: The underlying server library AutoMCP orchestrates.
+- **Pytest**: Used for all testing.
 
 ---
 
-## 3. Naming Conventions
+## 3. Directory Structure (Core Package)
 
-1. **Filenames & Modules**:
-   - All Python modules should use lowercase, underscores if necessary (e.g.,
-     `my_module.py`).
-2. **Classes**:
-   - Use `CamelCase` for class names: `ExampleGroup`, `MySchema`.
-3. **Functions and Methods**:
-   - Use `snake_case` for function and method names: `process_data()`.
-4. **Constants**:
-   - Use `UPPER_SNAKE_CASE` for module-level constants: `MAX_CONNECTIONS`.
-5. **Variables**:
-   - Use `snake_case` in Python for local variables and parameters: `max_count`,
-     `timeout_seconds`.
-6. **Operation Decorators**:
-   - If using `@operation(name="...")`, ensure the `name` is a short, clear
-     identifier that matches the operation’s purpose.
-
----
-
-## 4. Documentation & Comments
-
-1. **Inline Comments**:
-   - Use inline comments sparingly, and only to clarify non-obvious logic.
-   - For obvious or straightforward code, rely on descriptive variable/function
-     names and docstrings instead.
-2. **Function Docstrings**:
-   - Provide a high-level description of what the function does.
-   - List and describe function parameters (especially if they have non-trivial
-     behavior).
-   - Document return types and any exceptions.
-   - For `@operation` functions, reference the relevant Pydantic schema or
-     context usage (if `ctx` is utilized).
-3. **Class Docstrings**:
-   - Summarize the class’s purpose, highlight any special initialization
-     parameters or usage constraints.
-4. **Readme / High-Level Docs**:
-   - Keep the top-level `README.md` or `docs/` up to date with new features or
-     major changes.
-
----
-
-## 5. Testing & QA
-
-1. **Test Coverage**:
-   - All new features should come with unit tests.
-   - For complex or user-facing logic, also include integration tests.
-   - For concurrency or timeouts, add robust test cases simulating heavy loads
-     or CPU-bound tasks.
-2. **Test Organization**:
-   - Store tests in `tests/` or a similarly named directory.
-   - Group them logically by feature or module (e.g., `test_server_config.py`,
-     `test_timeout_handling.py`).
-3. **Pytest Usage**:
-   - We standardize on **pytest** for Python testing.
-   - Keep test functions short and descriptive, e.g.,
-     `test_schema_validation_failure()`.
-4. **Verification Suite**:
-   - For advanced end-to-end or environment checks, see the `verification/`
-     folder and scripts like `run_tests.py`.
-5. **CI Integration**:
-   - Ensure tests run automatically in CI.
-   - Blocks merges if tests fail or coverage drops below an acceptable
-     threshold.
-
----
-
-## 6. Code Review & Pull Requests
-
-1. **PR Scope**:
-   - A PR should address a single feature, bug fix, or refactor. Avoid bundling
-     unrelated changes.
-2. **PR Description**:
-   - Provide a concise summary of **what** was changed and **why**.
-   - List any dependencies or environment changes required.
-3. **Review Focus**:
-   - Code clarity, correctness, performance, and security.
-   - Avoid unproductive discussions about personal style preferences if the code
-     already fits established guidelines.
-4. **Approval Criteria**:
-   - All tests pass.
-   - Adheres to style guidelines.
-   - Contains appropriate docstrings/comments.
-   - No major architectural or performance issues.
-
----
-
-## 7. File & Directory Structure
-
-A typical project layout might look like:
+Focus is on the `automcp` library code and associated project files:
 
 ```
 repo-root/
 │
-├── automcp/               # Main library or package code
+├── automcp/               # Main library source code
 │   ├── __init__.py
-│   ├── cli.py
-│   ├── group.py
-│   ├── operation.py
-│   ├── server.py
-│   ├── types.py
-│   └── utils.py
+│   ├── cli.py             # Typer CLI application, orchestration logic
+│   ├── decorators.py      # @operation decorator definition and logic
+│   ├── types.py           # Pydantic models for ServiceConfig, GroupConfig
+│   └── utils.py           # Config loading, validation utilities
 │
-├── tests/                 # Unit & integration tests
-│   ├── test_server.py
-│   ├── test_operation.py
-│   ├── test_schema_validation.py
-│   └── ...
+├── tests/                 # Pytest tests for the core library
+│   ├── test_cli.py
+│   ├── test_decorators.py
+│   ├── test_types.py
+│   └── test_utils.py
+│   └── conftest.py        # Shared fixtures
 │
-├── verification/          # Extended verification suite (integration, coverage)
-│   ├── run_tests.py
-│   ├── ...
-│   └── groups/
-│
-├── docs/                  # Documentation files (Sphinx or Markdown)
-│   └── ...
-│
-├── .pre-commit-config.yaml
-├── pyproject.toml         # Project config (dependencies, style, etc.)
-├── README.md
-└── dev_style.md           # This style guide
+├── docs/                  # User-facing documentation (Markdown)
+├── .github/               # CI/CD workflows (e.g., GitHub Actions)
+├── dev_style.md           # This style guide
+├── pyproject.toml         # Dependencies, build config, tool settings (ruff, pytest)
+├── README.md              # Main project user readme
+└── LICENSE                # Project license
 ```
 
 ---
 
-## 8. Versioning & Release Management
+## 4. Coding Conventions
 
-1. **Version Bumps**:
-   - Update `__version__` (in `version.py` or similar) with **semantic
-     versioning** (MAJOR.MINOR.PATCH).
-2. **Release Notes**:
-   - Summarize new features, fixes, and possible breaking changes in the
-     changelog or GitHub release notes.
-3. **Tagging**:
-   - Tag releases in Git with the version number (`vX.Y.Z`).
-
----
-
-## 9. Additional Notes
-
-- **Performance Considerations**:
-  - If performance is critical, profile code (e.g., `pytest --profile`) or use
-    tools like `cProfile` and `line_profiler`.
-- **Security**:
-  - Follow best practices for input validation (Pydantic helps).
-  - Carefully handle external I/O or untrusted data.
-
----
-
-## 10. Future Evolution
-
-This style guide should be a **living document**:
-
-- When new coding patterns or technologies are introduced, update it.
-- If any guidelines become irrelevant or conflict with evolving best practices,
-  refine them.
-- Encourage team members to propose changes or clarifications via pull requests.
+1. **Naming**:
+   - Classes: `PascalCase`
+   - Functions, Methods, Variables: `snake_case`
+   - Constants: `UPPER_SNAKE_CASE`
+   - Internal Helpers: Prefix with `_` (e.g., `_load_yaml_file`).
+2. **Decorators**:
+   - The `@automcp.operation` decorator is defined in `decorators.py`. Its
+     primary role is attaching metadata. Keep runtime logic within it minimal.
+3. **Error Handling**:
+   - Raise specific exceptions where appropriate (e.g., `FileNotFoundError`,
+     `ValueError` for bad config, `TypeError`).
+   - The CLI (`cli.py`) should catch top-level exceptions during setup/startup
+     and report them clearly to `stderr`, exiting non-zero.
+   - Use Pydantic's `ValidationError` for configuration structure issues.
+4. **Logging**:
+   - Use `print("...", file=sys.stderr)` for internal operational logging during
+     startup and execution within the core library. Prefix messages logically
+     (e.g., `[Config Loader]`, `[Register]`).
 
 ---
 
-**Thank you for adhering to these conventions!** By following this style guide,
-we ensure that the AutoMCP codebase remains consistent, robust, and welcoming to
-both current and future contributors.
+## 5. Testing
+
+1. **Framework**: Use **Pytest**. Store tests in the top-level `tests/`
+   directory, mirroring the `automcp/` structure.
+2. **Test Types**:
+   - **Unit Tests**: Verify individual functions and methods in isolation (e.g.,
+     test `load_config` in `test_utils.py`, test Pydantic models in
+     `test_types.py`). Use mocking (`unittest.mock` or `pytest-mock`)
+     extensively.
+   - **Integration Tests**: Test interactions between modules (e.g., test
+     `cli.py`'s orchestration logic by mocking file loading, imports, and
+     FastMCP interactions).
+   - **End-to-End (Optional/Minimal)**: For the core library, full E2E might
+     involve complex process management. Focus primarily on robust unit and
+     integration tests. CLI command invocation can be tested using
+     `typer.testing.CliRunner` or `subprocess`.
+3. **Fixtures**: Use `pytest` fixtures (`@pytest.fixture` in `conftest.py` or
+   test files) for reusable setup code (e.g., temporary config files, mock
+   objects).
+4. **Coverage**:
+   - Aim for high test coverage (>80-90%) for core library code. Use
+     `pytest-cov` (`pytest --cov=automcp`). Critical paths must be tested.
+
+---
+
+## 6. Documentation
+
+1. **README (`README.md`)**: User-focused. Quick start, installation, basic
+   usage example. Links to detailed docs.
+2. **User Docs (`docs/`)**: Detailed user guides in Markdown. Covers
+   configuration options (`ServiceConfig`, `GroupConfig`), how to create service
+   groups, CLI usage, etc. This is separate from internal code documentation.
+3. **Code Docs (Docstrings)**: Use Google-style docstrings within the code for
+   all public modules, classes, functions, and methods. These explain the _how_
+   and _why_ of the code itself.
+4. **Style Guide (`dev_style.md`)**: This document, guiding internal development
+   practices.
+
+---
+
+## 7. Commit & PR Process
+
+1. **Branching**:
+   - Use descriptive branch names: `feat/yaml-config-support`,
+     `fix/cli-error-handling`.
+2. **Commits**:
+   - Follow the **Conventional Commits** specification (e.g., `feat:`, `fix:`,
+     `refactor:`, `test:`, `docs:`, `style:`, `chore:`). This aids automated
+     changelogs and semantic versioning.
+   - Keep commits focused and atomic.
+3. **Pull Requests (PRs)**:
+   - Must pass all CI checks (linting, testing).
+   - Include a clear description of the changes and link relevant issues.
+   - Ensure tests covering the changes are included.
+4. **Merging**:
+   - Prefer squash merges for feature branches to keep the main history clean,
+     but use judgment based on the PR's complexity.
+   - Ensure CI is green before merging.
+
+---
+
+## 8. Guidelines for LLM Contributors
+
+1. **Context is Key**: State the file(s) being modified and the specific goal.
+   Reference this guide if applicable.
+2. **Adhere to Standards**: Explicitly follow formatting (Black/Ruff), linting
+   (Ruff), typing, testing, and commit conventions outlined here.
+3. **Focused Changes**: Address one specific task per PR.
+4. **Testing**: Provide `pytest` tests for all new/modified logic. Explain test
+   coverage.
+5. **Reasoning**: Briefly explain _why_ a particular approach was chosen if
+   non-obvious.
+6. **Diff Format**: Use `diff` format for proposing changes unless providing a
+   new file.
+7. **Verification**: State that you have reviewed the logic/tests for
+   correctness.
+
+---
+
+## 9. Final Notes
+
+- This style guide is a **living document**. Update it via PRs as our practices
+  evolve.
+- When in doubt, refer to existing patterns in the codebase or ask a senior
+  contributor.
