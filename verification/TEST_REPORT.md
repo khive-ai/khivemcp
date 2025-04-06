@@ -27,8 +27,8 @@ All unit tests for the DataProcessorGroup passed successfully:
 
 The custom verification scripts were created and executed successfully:
 
-1. `verification/run_data_processor_server.py`: Successfully loads the
-   configuration and starts an MCP server.
+1. `automcp run --config <config_path>`: Successfully loads the
+   configuration and starts an MCP server using the enhanced CLI.
 2. `verification/test_data_processor_with_client.py`: Successfully connects to
    the server and tests all operations.
 
