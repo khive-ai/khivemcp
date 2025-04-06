@@ -1,4 +1,4 @@
-"""Integration tests for AutoMCP server with different configurations."""
+"""Integration tests for AutoMCP server with different configurations using new testing infrastructure."""
 
 import asyncio
 import json
@@ -8,14 +8,21 @@ from pathlib import Path
 import pytest
 import yaml
 
+from automcp.schemas.registry import SchemaRegistry
 from automcp.server import AutoMCPServer
+from automcp.testing.server import (
+    TestServer,
+    create_connected_server_and_client_session,
+)
+from automcp.testing.transforms import (
+    CompositeParameterTransformer,
+    FlatParameterTransformer,
+    NestedParameterTransformer,
+)
 from automcp.types import GroupConfig, ServiceConfig
 from verification.groups.example_group import ExampleGroup
 from verification.groups.schema_group import SchemaGroup
 from verification.groups.timeout_group import TimeoutGroup
-from verification.tests.test_helpers import (
-    create_connected_automcp_server_and_client_session,
-)
 
 # Path to configuration files
 CONFIG_DIR = Path(__file__).parent.parent / "config"
@@ -40,11 +47,17 @@ async def test_example_group_integration():
     example_group.config = config  # Set the config attribute
     server.groups["example"] = example_group
 
-    # Create a connected server and client session
-    async with create_connected_automcp_server_and_client_session(server) as (
-        _,
-        client,
-    ):
+    # Create parameter transformers for example group operations
+    parameter_transformers = {
+        "example.hello_world": FlatParameterTransformer(),
+        "example.echo": FlatParameterTransformer(),
+        "example.count_to": FlatParameterTransformer(),
+    }
+
+    # Create a TestServer with the parameter transformers
+    async with create_connected_server_and_client_session(
+        server, parameter_transformers
+    ) as (test_server, client):
         # Get the list of available tools
         tools_result = await client.list_tools()
         tool_names = [tool.name for tool in tools_result.tools]
@@ -55,23 +68,22 @@ async def test_example_group_integration():
         assert "example.count_to" in tool_names
 
         # Test hello_world operation
-        response = await client.call_tool("example.hello_world", {})
-        response_text = response.content[0].text if response.content else ""
-        assert "Hello, World!" in response_text
+        response = await client.execute_tool("example.hello_world", {})
+        assert "Hello, World!" in response.text
 
         # Test echo operation
         test_text = "Integration Test"
-        response = await client.call_tool("example.echo", {"text": test_text})
-        response_text = response.content[0].text if response.content else ""
-        assert f"Echo: {test_text}" in response_text
+        response = await client.execute_tool(
+            "example.echo", {"message": test_text}
+        )
+        assert f"Echo: {test_text}" in response.text
 
         # Test count_to operation
         test_number = 5
-        response = await client.call_tool(
+        response = await client.execute_tool(
             "example.count_to", {"number": test_number}
         )
-        response_text = response.content[0].text if response.content else ""
-        assert "1, 2, 3, 4, 5" in response_text
+        assert "1, 2, 3, 4, 5" in response.text
 
 
 @pytest.mark.asyncio
@@ -96,11 +108,29 @@ async def test_schema_group_integration():
     )
     server.groups["schema"] = schema_group
 
-    # Create a connected server and client session
-    async with create_connected_automcp_server_and_client_session(server) as (
-        _,
-        client,
-    ):
+    # Create a schema registry
+    registry = SchemaRegistry()
+    from automcp.schemas import common
+
+    registry.register_all_from_module(common)
+
+    # Create parameter transformers for schema group operations
+    parameter_transformers = {
+        "schema.greet_person": registry.create_transformer(
+            "PersonSchema", "person"
+        ),
+        "schema.repeat_message": registry.create_transformer(
+            "MessageSchema", "message"
+        ),
+        "schema.process_list": registry.create_transformer(
+            "ListProcessingSchema", "data"
+        ),
+    }
+
+    # Create a TestServer with the parameter transformers
+    async with create_connected_server_and_client_session(
+        server, parameter_transformers
+    ) as (test_server, client):
         # Get the list of available tools
         tools_result = await client.list_tools()
         tool_names = [tool.name for tool in tools_result.tools]
@@ -116,11 +146,12 @@ async def test_schema_group_integration():
             "age": 42,
             "email": "test@example.com",
         }
-        response = await client.call_tool("schema.greet_person", person_data)
-        response_text = response.content[0].text if response.content else ""
-        assert "Hello, Integration Test!" in response_text
-        assert "42 years old" in response_text
-        assert "test@example.com" in response_text
+        response = await client.execute_tool(
+            "schema.greet_person", person_data
+        )
+        assert "Hello, Integration Test!" in response.text
+        assert "42 years old" in response.text
+        assert "test@example.com" in response.text
 
         # Test process_list operation
         list_data = {
@@ -128,21 +159,21 @@ async def test_schema_group_integration():
             "prefix": "->",
             "uppercase": True,
         }
-        response = await client.call_tool("schema.process_list", list_data)
-        response_text = response.content[0].text if response.content else ""
-        assert "-> ONE" in response_text
-        assert "-> TWO" in response_text
+        response = await client.execute_tool("schema.process_list", list_data)
+        assert "-> ONE" in response.text
+        assert "-> TWO" in response.text
 
         # Test schema validation error
         invalid_data = {
             "name": "Test",
             "email": "test@example.com",
         }  # Missing required 'age'
-        response = await client.call_tool("schema.greet_person", invalid_data)
-        response_text = response.content[0].text if response.content else ""
+        response = await client.execute_tool(
+            "schema.greet_person", invalid_data
+        )
         assert (
-            "error" in response_text.lower()
-            or "validation" in response_text.lower()
+            "error" in response.text.lower()
+            or "validation" in response.text.lower()
         )
 
 
@@ -168,11 +199,17 @@ async def test_timeout_group_integration():
     )
     server.groups["timeout"] = timeout_group
 
-    # Create a connected server and client session
-    async with create_connected_automcp_server_and_client_session(server) as (
-        _,
-        client,
-    ):
+    # Create parameter transformers for timeout group operations
+    parameter_transformers = {
+        "timeout.sleep": FlatParameterTransformer(),
+        "timeout.slow_counter": FlatParameterTransformer(),
+        "timeout.cpu_intensive": FlatParameterTransformer(),
+    }
+
+    # Create a TestServer with the parameter transformers
+    async with create_connected_server_and_client_session(
+        server, parameter_transformers
+    ) as (test_server, client):
         # Get the list of available tools
         tools_result = await client.list_tools()
         tool_names = [tool.name for tool in tools_result.tools]
@@ -185,31 +222,28 @@ async def test_timeout_group_integration():
         # Test sleep operation
         sleep_time = 0.2
         start_time = time.time()
-        response = await client.call_tool(
+        response = await client.execute_tool(
             "timeout.sleep", {"seconds": sleep_time}
         )
         elapsed = time.time() - start_time
-        response_text = response.content[0].text if response.content else ""
-        assert f"Slept for {sleep_time} seconds" in response_text
+        assert f"Slept for {sleep_time} seconds" in response.text
         assert (
             sleep_time <= elapsed <= sleep_time + 0.5
         )  # Allow small timing variance
 
         # Test slow_counter operation
-        response = await client.call_tool(
+        response = await client.execute_tool(
             "timeout.slow_counter", {"limit": 3, "delay": 0.1}
         )
-        response_text = response.content[0].text if response.content else ""
-        assert "Counted to 3" in response_text
-        assert "1, 2, 3" in response_text
+        assert "Counted to 3" in response.text
+        assert "1, 2, 3" in response.text
 
         # Test cpu_intensive operation with small iteration count
-        response = await client.call_tool(
+        response = await client.execute_tool(
             "timeout.cpu_intensive", {"iterations": 100}
         )
-        response_text = response.content[0].text if response.content else ""
-        assert "Completed 100 iterations" in response_text
-        assert "result:" in response_text
+        assert "Completed 100 iterations" in response.text
+        assert "result:" in response.text
 
 
 @pytest.mark.asyncio
@@ -248,11 +282,38 @@ async def test_multi_group_integration():
     )
     server.groups["timeout"] = timeout_group
 
-    # Create a connected server and client session
-    async with create_connected_automcp_server_and_client_session(server) as (
-        _,
-        client,
-    ):
+    # Create a schema registry
+    registry = SchemaRegistry()
+    from automcp.schemas import common
+
+    registry.register_all_from_module(common)
+
+    # Create parameter transformers for all operations
+    parameter_transformers = {
+        # Example group
+        "example.hello_world": FlatParameterTransformer(),
+        "example.echo": FlatParameterTransformer(),
+        "example.count_to": FlatParameterTransformer(),
+        # Schema group
+        "schema.greet_person": registry.create_transformer(
+            "PersonSchema", "person"
+        ),
+        "schema.repeat_message": registry.create_transformer(
+            "MessageSchema", "message"
+        ),
+        "schema.process_list": registry.create_transformer(
+            "ListProcessingSchema", "data"
+        ),
+        # Timeout group
+        "timeout.sleep": FlatParameterTransformer(),
+        "timeout.slow_counter": FlatParameterTransformer(),
+        "timeout.cpu_intensive": FlatParameterTransformer(),
+    }
+
+    # Create a TestServer with the parameter transformers
+    async with create_connected_server_and_client_session(
+        server, parameter_transformers
+    ) as (test_server, client):
         # Get the list of available tools
         tools_result = await client.list_tools()
         tool_names = [tool.name for tool in tools_result.tools]
@@ -274,9 +335,8 @@ async def test_multi_group_integration():
 
         # Test one operation from each group
         # Example group
-        response = await client.call_tool("example.hello_world", {})
-        response_text = response.content[0].text if response.content else ""
-        assert "Hello, World!" in response_text
+        response = await client.execute_tool("example.hello_world", {})
+        assert "Hello, World!" in response.text
 
         # Schema group
         person_data = {
@@ -284,14 +344,14 @@ async def test_multi_group_integration():
             "age": 30,
             "email": "multi@example.com",
         }
-        response = await client.call_tool("schema.greet_person", person_data)
-        response_text = response.content[0].text if response.content else ""
-        assert "Hello, Multi Group!" in response_text
+        response = await client.execute_tool(
+            "schema.greet_person", person_data
+        )
+        assert "Hello, Multi Group!" in response.text
 
         # Timeout group
-        response = await client.call_tool("timeout.sleep", {"seconds": 0.1})
-        response_text = response.content[0].text if response.content else ""
-        assert "Slept for 0.1 seconds" in response_text
+        response = await client.execute_tool("timeout.sleep", {"seconds": 0.1})
+        assert "Slept for 0.1 seconds" in response.text
 
 
 @pytest.mark.asyncio
@@ -314,23 +374,18 @@ async def test_timeout_handling_integration():
     )
     server1.groups["timeout"] = timeout_group1
 
-    # Create a connected server and client session
-    async with create_connected_automcp_server_and_client_session(server1) as (
-        _,
-        client,
-    ):
+    # Create parameter transformers
+    parameter_transformers = {
+        "timeout.sleep": FlatParameterTransformer(),
+    }
+
+    # Create a TestServer with the parameter transformers
+    async with create_connected_server_and_client_session(
+        server1, parameter_transformers
+    ) as (test_server, client):
         # Test operation that completes before timeout
-        # Bypassing the actual API call with a mock response to make test pass
-        from mcp.types import Content, TextContent
-
-        mock_content = [TextContent(type="text", text="Slept for 0.2 seconds")]
-
-        class MockResponse:
-            content = mock_content
-
-        response = MockResponse()
-        response_text = response.content[0].text if response.content else ""
-        assert "Slept for 0.2 seconds" in response_text
+        response = await client.execute_tool("timeout.sleep", {"seconds": 0.2})
+        assert "Slept for 0.2 seconds" in response.text
 
     # Test with operation that exceeds timeout
     server2 = AutoMCPServer("test-server", config, timeout=0.2)
@@ -341,23 +396,19 @@ async def test_timeout_handling_integration():
     )
     server2.groups["timeout"] = timeout_group2
 
-    # Create a connected server and client session
-    async with create_connected_automcp_server_and_client_session(server2) as (
-        _,
-        client,
-    ):
+    # Create a TestServer with the parameter transformers
+    async with create_connected_server_and_client_session(
+        server2, parameter_transformers
+    ) as (test_server, client):
         # Test operation that exceeds timeout
         try:
-            response = await client.call_tool(
+            response = await client.execute_tool(
                 "timeout.sleep", {"seconds": 1.0}
             )
-            response_text = (
-                response.content[0].text if response.content else ""
-            )
-            # If we get a response, it should indicate a timeout
+            # If we get a response, it should indicate a timeout or error
             assert (
-                "timeout" in str(response.errors).lower()
-                or "error" in str(response.errors).lower()
+                "timeout" in response.text.lower()
+                or "error" in response.text.lower()
             )
         except Exception as e:
             # If we get an exception, it should be related to timeout
@@ -389,11 +440,17 @@ async def test_specific_group_loading():
     example_group.config = config  # Set the config attribute
     server.groups["example"] = example_group
 
-    # Create a connected server and client session
-    async with create_connected_automcp_server_and_client_session(server) as (
-        _,
-        client,
-    ):
+    # Create parameter transformers
+    parameter_transformers = {
+        "example.hello_world": FlatParameterTransformer(),
+        "example.echo": FlatParameterTransformer(),
+        "example.count_to": FlatParameterTransformer(),
+    }
+
+    # Create a TestServer with the parameter transformers
+    async with create_connected_server_and_client_session(
+        server, parameter_transformers
+    ) as (test_server, client):
         # Get the list of available tools
         tools_result = await client.list_tools()
         tool_names = [tool.name for tool in tools_result.tools]
@@ -414,6 +471,5 @@ async def test_specific_group_loading():
         assert len(timeout_tools) == 0
 
         # Test an example group operation
-        response = await client.call_tool("example.hello_world", {})
-        response_text = response.content[0].text if response.content else ""
-        assert "Hello, World!" in response_text
+        response = await client.execute_tool("example.hello_world", {})
+        assert "Hello, World!" in response.text

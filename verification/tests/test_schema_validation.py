@@ -1,22 +1,27 @@
-"""Tests for schema validation in AutoMCP operations."""
+"""Tests for schema validation in AutoMCP operations using the new testing infrastructure."""
 
 import pytest
 from pydantic import ValidationError
 
+from automcp.schemas import ListProcessingSchema, MessageSchema, PersonSchema
+from automcp.schemas.registry import SchemaRegistry
 from automcp.server import AutoMCPServer
 from automcp.testing.context import MockContext
+from automcp.testing.server import TestServer
+from automcp.testing.transforms import SchemaParameterTransformer
 from automcp.types import ExecutionRequest, GroupConfig, ServiceRequest
 from verification.groups.schema_group import SchemaGroup
-from verification.schemas import (
-    ListProcessingSchema,
-    MessageSchema,
-    PersonSchema,
-)
 
 
 @pytest.mark.asyncio
 async def test_schema_validation_success():
-    """Test successful schema validation for operations."""
+    """Test successful schema validation for operations using the Schema Registry and TestServer."""
+    # Create a schema registry and register our schemas
+    registry = SchemaRegistry()
+    registry.register(PersonSchema)
+    registry.register(MessageSchema)
+    registry.register(ListProcessingSchema)
+
     # Create a server with the SchemaGroup
     config = GroupConfig(name="schema", description="Schema group")
     server = AutoMCPServer("test-server", config)
@@ -25,98 +30,173 @@ async def test_schema_validation_success():
     schema_group = SchemaGroup()
     server.groups["schema"] = schema_group
 
-    # Test PersonSchema validation directly
-    person_data = {"name": "John Doe", "age": 30, "email": "john@example.com"}
-    result = await schema_group.greet_person(**person_data)
-    assert "Hello, John Doe!" in result
-    assert "30 years old" in result
-    assert "john@example.com" in result
-
-    # Test MessageSchema validation directly
-    ctx = MockContext()
-    message_data = {"text": "Hello", "repeat": 3}
-    result = await schema_group.repeat_message(**message_data, ctx=ctx)
-    assert "Hello Hello Hello" in result
-
-    # Test ListProcessingSchema validation directly
-    list_data = {
-        "items": ["apple", "banana", "cherry"],
-        "prefix": "Fruit:",
-        "uppercase": True,
+    # Create parameter transformers for each schema
+    parameter_transformers = {
+        "schema.greet_person": registry.create_transformer(
+            "PersonSchema", "person"
+        ),
+        "schema.repeat_message": registry.create_transformer(
+            "MessageSchema", "message"
+        ),
+        "schema.process_list": registry.create_transformer(
+            "ListProcessingSchema", "data"
+        ),
     }
-    result = await schema_group.process_list(**list_data)
-    assert "Fruit: APPLE" in result[0]
-    assert "Fruit: BANANA" in result[1]
-    assert "Fruit: CHERRY" in result[2]
+
+    # Create a test server with the parameter transformers
+    test_server = TestServer(server, parameter_transformers)
+
+    # Test PersonSchema validation with the test server
+    async with test_server.create_client_session() as client:
+        person_data = {
+            "name": "John Doe",
+            "age": 30,
+            "email": "john@example.com",
+        }
+        result = await client.execute_tool("schema.greet_person", person_data)
+        assert "Hello, John Doe!" in result.text
+        assert "30 years old" in result.text
+        assert "john@example.com" in result.text
+
+        # Test nested format for PersonSchema
+        nested_person_data = {
+            "person": {
+                "name": "Jane Doe",
+                "age": 25,
+                "email": "jane@example.com",
+            }
+        }
+        result = await client.execute_tool(
+            "schema.greet_person", nested_person_data
+        )
+        assert "Hello, Jane Doe!" in result.text
+        assert "25 years old" in result.text
+        assert "jane@example.com" in result.text
+
+    # Test MessageSchema validation with the test server
+    async with test_server.create_client_session() as client:
+        message_data = {"text": "Hello", "repeat": 3}
+        result = await client.execute_tool(
+            "schema.repeat_message", message_data
+        )
+        assert "Hello Hello Hello" in result.text
+
+        # Test nested format for MessageSchema
+        nested_message_data = {"message": {"text": "World", "repeat": 2}}
+        result = await client.execute_tool(
+            "schema.repeat_message", nested_message_data
+        )
+        assert "World World" in result.text
+
+    # Test ListProcessingSchema validation with the test server
+    async with test_server.create_client_session() as client:
+        list_data = {
+            "items": ["apple", "banana", "cherry"],
+            "prefix": "Fruit:",
+            "uppercase": True,
+        }
+        result = await client.execute_tool("schema.process_list", list_data)
+        result_json = result.text.strip("[]").replace('"', "").split(",")
+        assert "Fruit: APPLE" in result_json[0]
+        assert "Fruit: BANANA" in result_json[1]
+        assert "Fruit: CHERRY" in result_json[2]
+
+        # Test nested format for ListProcessingSchema
+        nested_list_data = {
+            "data": {
+                "items": ["dog", "cat", "bird"],
+                "prefix": "Animal:",
+                "uppercase": True,
+            }
+        }
+        result = await client.execute_tool(
+            "schema.process_list", nested_list_data
+        )
+        result_json = result.text.strip("[]").replace('"', "").split(",")
+        assert "Animal: DOG" in result_json[0]
+        assert "Animal: CAT" in result_json[1]
+        assert "Animal: BIRD" in result_json[2]
 
 
 @pytest.mark.asyncio
 async def test_schema_validation_failure():
-    """Test schema validation failure for operations."""
+    """Test schema validation failure using the TestServer."""
+    # Create a schema registry and register our schemas
+    registry = SchemaRegistry()
+    registry.register(PersonSchema)
+    registry.register(MessageSchema)
+    registry.register(ListProcessingSchema)
+
     # Create a server with the SchemaGroup
     config = GroupConfig(name="schema", description="Schema group")
     server = AutoMCPServer("test-server", config)
     server.groups["schema"] = SchemaGroup()
 
+    # Create parameter transformers for each schema
+    parameter_transformers = {
+        "schema.greet_person": registry.create_transformer(
+            "PersonSchema", "person"
+        ),
+        "schema.repeat_message": registry.create_transformer(
+            "MessageSchema", "message"
+        ),
+        "schema.process_list": registry.create_transformer(
+            "ListProcessingSchema", "data"
+        ),
+    }
+
+    # Create a test server with the parameter transformers
+    test_server = TestServer(server, parameter_transformers)
+
     # Test missing required field in PersonSchema
-    invalid_person_data = {"name": "John Doe"}  # Missing required 'age' field
-    request = ServiceRequest(
-        requests=[
-            ExecutionRequest(
-                operation="greet_person", arguments=invalid_person_data
-            )
-        ]
-    )
+    async with test_server.create_client_session() as client:
+        invalid_person_data = {
+            "name": "John Doe"
+        }  # Missing required 'age' field
+        result = await client.execute_tool(
+            "schema.greet_person", invalid_person_data
+        )
+        assert (
+            "error" in result.text.lower()
+            or "validation" in result.text.lower()
+        )
 
-    # The server should handle the validation error and return an error response
-    result = await server._handle_service_request("schema", request)
-    assert (
-        "error" in result.content.text.lower()
-        or "validation" in result.content.text.lower()
-    )
+        # Test invalid field type in PersonSchema
+        invalid_person_data = {
+            "name": "John Doe",
+            "age": "thirty",  # Age should be an integer
+        }
+        result = await client.execute_tool(
+            "schema.greet_person", invalid_person_data
+        )
+        assert (
+            "error" in result.text.lower()
+            or "validation" in result.text.lower()
+        )
 
-    # Test invalid field type in PersonSchema
-    invalid_person_data = {
-        "name": "John Doe",
-        "age": "thirty",
-    }  # Age should be an integer
-    request = ServiceRequest(
-        requests=[
-            ExecutionRequest(
-                operation="greet_person", arguments=invalid_person_data
-            )
-        ]
-    )
-
-    result = await server._handle_service_request("schema", request)
-    assert (
-        "error" in result.content.text.lower()
-        or "validation" in result.content.text.lower()
-    )
-
-    # Test value out of range in MessageSchema
-    invalid_message_data = {
-        "text": "Hello",
-        "repeat": 15,
-    }  # repeat must be <= 10
-    request = ServiceRequest(
-        requests=[
-            ExecutionRequest(
-                operation="repeat_message", arguments=invalid_message_data
-            )
-        ]
-    )
-
-    result = await server._handle_service_request("schema", request)
-    assert (
-        "error" in result.content.text.lower()
-        or "validation" in result.content.text.lower()
-    )
+        # Test value out of range in MessageSchema
+        invalid_message_data = {
+            "text": "Hello",
+            "repeat": 15,  # repeat must be <= 10
+        }
+        result = await client.execute_tool(
+            "schema.repeat_message", invalid_message_data
+        )
+        assert (
+            "error" in result.text.lower()
+            or "validation" in result.text.lower()
+        )
 
 
 @pytest.mark.asyncio
 async def test_schema_optional_fields():
-    """Test schema validation with optional fields."""
+    """Test schema validation with optional fields using the TestServer."""
+    # Create a schema registry and register our schemas
+    registry = SchemaRegistry()
+    registry.register(PersonSchema)
+    registry.register(MessageSchema)
+    registry.register(ListProcessingSchema)
+
     # Create a server with the SchemaGroup
     config = GroupConfig(name="schema", description="Schema group")
     server = AutoMCPServer("test-server", config)
@@ -125,18 +205,36 @@ async def test_schema_optional_fields():
     schema_group = SchemaGroup()
     server.groups["schema"] = schema_group
 
-    # Test PersonSchema with optional email omitted
-    person_data = {"name": "John Doe", "age": 30}  # No email
-    result = await schema_group.greet_person(**person_data)
-    assert "Hello, John Doe!" in result
-    assert "30 years old" in result
-    assert "email" not in result.lower()
+    # Create parameter transformers for each schema
+    parameter_transformers = {
+        "schema.greet_person": registry.create_transformer(
+            "PersonSchema", "person"
+        ),
+        "schema.repeat_message": registry.create_transformer(
+            "MessageSchema", "message"
+        ),
+        "schema.process_list": registry.create_transformer(
+            "ListProcessingSchema", "data"
+        ),
+    }
 
-    # Test ListProcessingSchema with default values
-    list_data = {"items": ["apple", "banana"]}  # No prefix or uppercase
-    result = await schema_group.process_list(**list_data)
-    assert "Item: apple" in result[0]
-    assert "Item: banana" in result[1]
+    # Create a test server with the parameter transformers
+    test_server = TestServer(server, parameter_transformers)
+
+    # Test PersonSchema with optional email omitted
+    async with test_server.create_client_session() as client:
+        person_data = {"name": "John Doe", "age": 30}  # No email
+        result = await client.execute_tool("schema.greet_person", person_data)
+        assert "Hello, John Doe!" in result.text
+        assert "30 years old" in result.text
+        assert "email" not in result.text.lower()
+
+        # Test ListProcessingSchema with default values
+        list_data = {"items": ["apple", "banana"]}  # No prefix or uppercase
+        result = await client.execute_tool("schema.process_list", list_data)
+        result_json = result.text.strip("[]").replace('"', "").split(",")
+        assert "Item: apple" in result_json[0]
+        assert "Item: banana" in result_json[1]
 
 
 @pytest.mark.asyncio

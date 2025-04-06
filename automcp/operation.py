@@ -3,7 +3,17 @@
 import inspect
 from collections.abc import Callable
 from functools import wraps
-from typing import Any, Dict, List, Optional, Type, TypeVar, Union, cast
+from typing import (
+    Any,
+    Dict,
+    List,
+    Optional,
+    Protocol,
+    Type,
+    TypeVar,
+    Union,
+    cast,
+)
 
 from pydantic import BaseModel, ValidationError
 
@@ -25,17 +35,19 @@ def operation(
     schema: type[BaseModel] | None = None,
     name: str | None = None,
     policy: str | None = None,
+    parameter_transformer: Any | None = None,
 ) -> Callable:
     """Decorator for service operations.
 
     This decorator marks a method as an operation that can be executed by
     the ServiceGroup. It handles schema validation, context injection,
-    and attaches metadata to the wrapped function.
+    parameter transformation, and attaches metadata to the wrapped function.
 
     Args:
         schema: Optional Pydantic model class for input validation.
         name: Optional custom name for the operation. Defaults to the function name.
         policy: Optional policy string for access control.
+        parameter_transformer: Optional parameter transformer for custom parameter handling.
 
     Returns:
         A decorator function that wraps the original operation method.
@@ -199,6 +211,20 @@ def operation(
                         # Re-raise validation errors to be caught by ServiceGroup.execute
                         raise e
 
+            # Apply parameter transformer if provided
+            if parameter_transformer is not None and not args:
+                try:
+                    # Transform the kwargs after schema validation
+                    transformed_kwargs = await parameter_transformer.transform(
+                        op_name, kwargs
+                    )
+                    kwargs = transformed_kwargs
+                except Exception as e:
+                    # Log the error but continue with original kwargs
+                    import logging
+
+                    logging.warning(f"Parameter transformation failed: {e}")
+
             # Call the original function with the processed arguments
             return await func(self, *args, **kwargs)
 
@@ -209,6 +235,7 @@ def operation(
         wrapper.policy = policy
         wrapper.doc = func.__doc__
         wrapper.requires_context = requires_context
+        wrapper.parameter_transformer = parameter_transformer
 
         return wrapper
 

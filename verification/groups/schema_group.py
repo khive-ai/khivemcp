@@ -4,11 +4,7 @@ from mcp.types import TextContent as Context
 
 from automcp.group import ServiceGroup
 from automcp.operation import operation
-from verification.schemas import (
-    ListProcessingSchema,
-    MessageSchema,
-    PersonSchema,
-)
+from automcp.schemas import ListProcessingSchema, MessageSchema, PersonSchema
 
 
 class SchemaGroup(ServiceGroup):
