@@ -1,0 +1,26 @@
+{
+  "name": "data-processor",
+  "description": "MCP-compatible data processor server",
+  "groups": {
+    "verification.groups.mcp_data_processor_group:MCPDataProcessorGroup": {
+      "name": "data-processor",
+      "description": "MCP-compatible data processing operations",
+      "config": {
+        "default_processing": {
+          "filter_fields": null,
+          "transform_case": null,
+          "aggregate": false,
+          "sort_by": null,
+          "sort_order": "asc"
+        },
+        "default_report_format": {
+          "title": "Data Processing Report",
+          "include_summary": true,
+          "include_timestamp": true,
+          "format_type": "text"
+        },
+        "mcp_compatible": true
+      }
+    }
+  }
+}

@@ -65,10 +65,19 @@ class ServiceGroup:
             if "ctx" in sig.parameters:
                 args["ctx"] = ctx
 
-            result = await operation(**args)
-            return ExecutionResponse(
-                content=types.TextContent(type="text", text=str(result)), error=None
-            )
+            # Add debug print statements to trace execution
+            print(f"DEBUG: Calling operation {request.operation} with args: {args}")
+            try:
+                result = await operation(**args)
+                print(f"DEBUG: Operation {request.operation} succeeded with result: {result}")
+                return ExecutionResponse(
+                    content=types.TextContent(type="text", text=str(result)), error=None
+                )
+            except Exception as e:
+                print(f"DEBUG: Operation {request.operation} failed with error: {e}")
+                import traceback
+                traceback.print_exc()
+                raise
         except Exception as e:
             return ExecutionResponse(
                 content=types.TextContent(type="text", text=str(e)), error=str(e)

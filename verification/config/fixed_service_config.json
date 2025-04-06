@@ -1,0 +1,25 @@
+{
+  "name": "fixed-data-processor-service",
+  "description": "Service with fixed data processor implementation",
+  "groups": {
+    "verification.groups.fixed_processor_group:FixedDataProcessorGroup": {
+      "name": "data-processor",
+      "description": "Group for data processing operations",
+      "config": {
+        "default_processing": {
+          "filter_fields": null,
+          "transform_case": null,
+          "aggregate": false,
+          "sort_by": null,
+          "sort_order": "asc"
+        },
+        "default_report_format": {
+          "title": "Data Processing Report",
+          "include_summary": true,
+          "include_timestamp": true,
+          "format_type": "text"
+        }
+      }
+    }
+  }
+}
