@@ -1,5 +1,5 @@
 # automcp/__init__.py
-"""AutoMCP: Configuration-driven MCP server framework using FastMCP."""
+"""khiveMCP: Configuration-driven MCP server framework using FastMCP."""
 
 # Expose key components for users importing the library
 from .decorators import operation

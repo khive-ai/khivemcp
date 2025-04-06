@@ -1,4 +1,4 @@
-"""AutoMCP Command Line Interface - Refactored for FastMCP & AutoMCP wrappers."""
+"""KhiveMCP Command Line Interface"""
 
 import asyncio
 import importlib
@@ -13,7 +13,7 @@ import typer
 from mcp.server.fastmcp import FastMCP
 
 # Import AutoMCP wrappers and config types/loader
-from .decorators import _AUTOMCP_OP_META  # Internal detail for lookup
+from .decorators import _KHIVEMCP_OP_META  # Internal detail for lookup
 from .types import GroupConfig, ServiceConfig
 from .utils import load_config
 
@@ -123,10 +123,10 @@ async def run_automcp_server(config: ServiceConfig | GroupConfig) -> None:
             for member_name, member_value in inspect.getmembers(group_instance):
                 # Check if it's an async method and has our decorator's metadata
                 if inspect.iscoroutinefunction(member_value) and hasattr(
-                    member_value, _AUTOMCP_OP_META
+                    member_value, _KHIVEMCP_OP_META
                 ):
                     # Verify it's the correct marker
-                    op_meta = getattr(member_value, _AUTOMCP_OP_META, {})
+                    op_meta = getattr(member_value, _KHIVEMCP_OP_META, {})
                     if op_meta.get("is_automcp_operation") is not True:
                         continue  # Not our decorator
 

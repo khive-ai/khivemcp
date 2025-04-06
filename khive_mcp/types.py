@@ -1,4 +1,4 @@
-"""Core configuration data models for AutoMCP."""
+"""Core configuration data models for KhiveMCP."""
 
 from typing import Any
 

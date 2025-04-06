@@ -1,4 +1,4 @@
-"""Decorators for AutoMCP Service Groups."""
+"""Decorators for KhiveMCP Service Groups."""
 
 import functools
 import inspect
@@ -8,7 +8,7 @@ from typing import Any
 from pydantic import BaseModel
 
 # Internal metadata attribute key
-_AUTOMCP_OP_META = "__automcp_op_meta__"
+_KHIVEMCP_OP_META = "__automcp_op_meta__"
 
 
 def operation(
@@ -17,9 +17,9 @@ def operation(
     schema: type[BaseModel] = None,
 ):
     """
-    Decorator to mark an async method in an AutoMCP group class as an operation.
+    Decorator to mark an async method in an KhiveMCP group class as an operation.
 
-    This attaches metadata used by the AutoMCP server during startup to register
+    This attaches metadata used by the KhiveMCP server during startup to register
     the method as an MCP tool.
 
     Args:
@@ -37,10 +37,10 @@ def operation(
     def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
         if not inspect.isfunction(func):
             # This might happen if applied to non-methods, although intended for methods
-            raise TypeError("@automcp.operation can only decorate functions/methods.")
+            raise TypeError("@khive_mcp.operation can only decorate functions/methods.")
         if not inspect.iscoroutinefunction(func):
             raise TypeError(
-                f"@automcp.operation requires an async function (`async def`), but got '{func.__name__}'."
+                f"@khive_mcp.operation requires an async function (`async def`), but got '{func.__name__}'."
             )
 
         op_name = name or func.__name__
@@ -56,11 +56,11 @@ def operation(
         # Store metadata directly on the function object
         setattr(
             func,
-            _AUTOMCP_OP_META,
+            _KHIVEMCP_OP_META,
             {
                 "local_name": op_name,
                 "description": op_desc,
-                "is_automcp_operation": True,  # Explicit marker
+                "is_khivemcp_operation": True,  # Explicit marker
             },
         )
 
@@ -84,8 +84,8 @@ def operation(
         # setattr(wrapper, _AUTOMCP_OP_META, getattr(func, _AUTOMCP_OP_META))
         # Update: functools.wraps should handle copying attributes like __doc__, __name__
         # Let's ensure our custom attribute is also copied if needed, though maybe redundant.
-        if hasattr(func, _AUTOMCP_OP_META):
-            setattr(wrapper, _AUTOMCP_OP_META, getattr(func, _AUTOMCP_OP_META))
+        if hasattr(func, _KHIVEMCP_OP_META):
+            setattr(wrapper, _KHIVEMCP_OP_META, getattr(func, _KHIVEMCP_OP_META))
 
         wrapper.doc = func.__doc__
         return wrapper

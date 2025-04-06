@@ -1,4 +1,4 @@
-"""Data processor service group implementation - Using AutoMCP wrappers."""
+"""Data processor service group implementation - Using KhiveMCP wrappers."""
 
 import datetime
 import json
@@ -8,7 +8,6 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
-# Import AutoMCP wrappers
 from khive_mcp.decorators import operation
 from khive_mcp.types import ServiceGroup
 
@@ -91,10 +90,10 @@ class ErrorTestSchema(BaseModel):
 
 # --- Service Group Class ---
 class DataProcessorGroup(ServiceGroup):
-    """Service group using AutoMCP decorators and context."""
+    """Service group using KhiveMCP decorators and context."""
 
     def __init__(self, config: dict | None = None):
-        """Initialize the group. Optionally accepts config from AutoMCP."""
+        """Initialize the group. Optionally accepts config from KhiveMCP."""
         super().__init__(config=config)
 
         print(
