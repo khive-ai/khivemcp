@@ -4,7 +4,13 @@
       "command": "uv",
       "args": [
         "run",
-        "verification/data_processor_mcp_server.py"
+        "python",
+        "-m",
+        "automcp.cli",
+        "run",
+        "verification/config/data_processor_group.json",
+        "--mode",
+        "stdio"
       ],
       "alwaysAllow": [
         "data-processor.process_data",
