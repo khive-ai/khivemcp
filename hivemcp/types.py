@@ -1,4 +1,4 @@
-"""Core configuration data models for KhiveMCP."""
+"""Core configuration data models for hiveMCP."""
 
 from typing import Any
 
