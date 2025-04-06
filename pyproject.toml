@@ -1,13 +1,31 @@
 [project]
 name = "hivemcp"
 version = "0.1.0"
-description = "Add your description here"
+description = "An easy mcp deployment framework"
+authors = [
+    { name = "HaiyangLi", email = "quantocean.li@gmail.com" },
+]
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
     "mcp[cli]>=1.6.0",
     "pydantic>=2.0.0",
     "typer>=0.15.1",
+]
+license = {file = "LICENSE"}
+classifiers=[
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+    "Framework :: Pydantic",
+    "Framework :: Pydantic :: 2",
+    "Framework :: Pytest",
 ]
 
 [dependency-groups]
