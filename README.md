@@ -149,6 +149,45 @@ schemas for input validation.
 _(Refer to the `docs/` directory for guides on creating groups, using schemas,
 and accessing configuration.)_
 
+## Examples
+
+_Under `examples`_
+
+### Search Group Example
+
+To use the search group example, you must have `EXA_API_KEY` and
+`PERPLEXITY_API_KEY` environment variables set, in your `.env` file or in your
+environment.
+
+_DO NOT EVER SAVE API KEY IN CONFIG FILE_
+
+if you haven't already, install the required dependencies
+
+```bash
+uv pip install "khivemcp[examples]"
+```
+
+then add the following to your `mcpServers` in your MCP client configuration:
+
+```json
+{
+  "mcpServers": {
+    "search-service": {
+      "command": "uv",
+      "args": [
+        "run",
+        "python",
+        "-m",
+        "khivemcp.cli",
+        "absolute_path_to/examples/config/search_group_config.json"
+      ],
+      "timeout": 300,
+      "alwaysAllow": []
+    }
+  }
+}
+```
+
 ## Contributing
 
 Contributions to the core `khivemcp` library are welcome! Please read the
