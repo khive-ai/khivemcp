@@ -1,10 +1,7 @@
 {
   "name": "data-processor",
-  "class_path": "verification.groups.data_processor_group:DataProcessorGroup",
+  "class_path": "examples.groups.data_processor_group:DataProcessorGroup",
   "description": "A group for processing and validating data structures.",
-  "packages": [
-    "pydantic>=2.0"
-  ],
   "config": {
     "default_report_format": "markdown",
     "max_items_per_request": 1000

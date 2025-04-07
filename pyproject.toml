@@ -1,6 +1,6 @@
 [project]
 name = "khivemcp"
-version = "0.1.0"
+version = "0.1.1"
 description = "An easy mcp deployment framework"
 authors = [
     { name = "HaiyangLi", email = "quantocean.li@gmail.com" },
@@ -94,4 +94,9 @@ exclude = [
     "logs/*",
     "verification",
     "scripts",
+]
+
+[project.optional-dependencies]
+examples = [
+    "lionagi>=0.10.6",
 ]
