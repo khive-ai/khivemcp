@@ -11,7 +11,18 @@ files.
 ![PyPI - Downloads](https://img.shields.io/pypi/dm/khivemcp?color=blue)
 ![Python Version](https://img.shields.io/badge/python-3.10%2B-blue)
 
-<!-- TODO: Add badges for PyPI Version, Build Status, Test Coverage -->
+## Note:
+
+This project is in its early stages. Currently,
+
+- it can only be used in a virtual environment, for example if you are using
+  `uv venv` in a VSCode environment, (e.g.
+  [`roo`](https://github.com/RooVetGit/Roo-Code),
+  [`cursor`](https://www.cursor.com/en),
+  [`Github CodeSpace`](https://github.com/features/codespaces) etc.)
+- it does **NOT** support [`Claude Desktop`](https://claude.ai/download) due to
+  python path issues. If you figure out how to make it work, please open an
+  issue or PR.
 
 ## What is khivemcp?
 
@@ -199,3 +210,8 @@ contribution workflow.
 
 This project is licensed under the MIT License - see the [LICENSE](./LICENSE)
 file for details.
+
+## Acknowledgements
+
+- [Model Context Protocol Documentation](https://modelcontextprotocol.io/introduction)
+- [FastMCP](https://github.com/jlowin/fastmcp)
