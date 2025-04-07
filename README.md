@@ -7,6 +7,9 @@ tools and structure using simple Python classes, decorators, and configuration
 files.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
+![PyPI - Version](https://img.shields.io/pypi/v/khivemcp?labelColor=233476aa&color=231fc935)
+![PyPI - Downloads](https://img.shields.io/pypi/dm/khivemcp?color=blue)
+![Python Version](https://img.shields.io/badge/python-3.10%2B-blue)
 
 <!-- TODO: Add badges for PyPI Version, Build Status, Test Coverage -->
 
