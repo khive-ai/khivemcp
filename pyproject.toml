@@ -1,6 +1,6 @@
 [project]
 name = "khivemcp"
-version = "0.1.1"
+version = "0.1.2"
 description = "An easy mcp deployment framework"
 authors = [
     { name = "HaiyangLi", email = "quantocean.li@gmail.com" },
@@ -10,6 +10,7 @@ requires-python = ">=3.10"
 dependencies = [
     "mcp[cli]>=1.6.0",
     "pydantic>=2.0.0",
+    "pyyaml>=6.0.2",
     "typer>=0.15.1",
 ]
 license = {file = "LICENSE"}
