@@ -11,19 +11,6 @@ files.
 ![PyPI - Downloads](https://img.shields.io/pypi/dm/khivemcp?color=blue)
 ![Python Version](https://img.shields.io/badge/python-3.10%2B-blue)
 
-## Note:
-
-This project is in its early stages. Currently,
-
-- it can only be used in a virtual environment, for example if you are using
-  `uv venv` in a VSCode environment, (e.g.
-  [`roo`](https://github.com/RooVetGit/Roo-Code),
-  [`cursor`](https://www.cursor.com/en),
-  [`Github CodeSpace`](https://github.com/features/codespaces) etc.)
-- it does **NOT** support [`Claude Desktop`](https://claude.ai/download) due to
-  python path issues. If you figure out how to make it work, please open an
-  issue or PR.
-
 ## What is khivemcp?
 
 Building services that implement the **Model-Context Protocol (MCP)** often
@@ -184,10 +171,8 @@ then add the following to your `mcpServers` in your MCP client configuration:
 {
   "mcpServers": {
     "search-service": {
-      "command": "uv",
+      "command": "absolute_path_to/.venv/bin/python",
       "args": [
-        "run",
-        "python",
         "-m",
         "khivemcp.cli",
         "absolute_path_to/examples/config/search_group_config.json"
