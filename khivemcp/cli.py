@@ -135,7 +135,7 @@ async def run_khivemcp_server(config: ServiceConfig | GroupConfig) -> None:
 
                     if local_op_name:
                         # Construct the full MCP tool name
-                        full_tool_name = f"{group_name_from_config}.{local_op_name}"
+                        full_tool_name = f"{group_name_from_config}_{local_op_name}"
 
                         # Check for duplicate MCP tool names across all groups
                         if full_tool_name in registered_tool_names:
