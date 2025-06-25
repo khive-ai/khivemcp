@@ -22,7 +22,7 @@ classifiers=[
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: Apache Software License",
+    "License :: OSI Approved :: MIT Software License",
     "Operating System :: OS Independent",
     "Framework :: Pydantic",
     "Framework :: Pydantic :: 2",
@@ -37,6 +37,9 @@ dev = [
     "pytest>=8.3.4",
     "pytest-asyncio>=0.24.0",
     "pytest-cov>=4.1.0",
+    "mkdocs>=1.5.0",
+    "mkdocs-material>=9.5.0",
+    "mkdocstrings[python]>=0.24.0",
 ]
 
 [tool.black]

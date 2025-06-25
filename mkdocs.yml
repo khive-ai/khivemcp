@@ -1,0 +1,91 @@
+site_name: khivemcp
+site_description: Configuration-driven MCP services in Python
+site_url: https://github.com/yourusername/khivemcp
+
+# Repository
+repo_name: khivemcp
+repo_url: https://github.com/yourusername/khivemcp
+edit_uri: edit/main/docs/
+
+# Copyright
+copyright: Copyright &copy; 2025
+
+# Theme configuration
+theme:
+  name: material
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - navigation.tracking
+    - navigation.top
+    - search.highlight
+    - search.suggest
+    - content.code.copy
+    - content.tabs.link
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/toggle-switch-off-outline
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/toggle-switch
+        name: Switch to light mode
+  icon:
+    repo: fontawesome/brands/github
+
+# Extensions
+markdown_extensions:
+  - admonition
+  - attr_list
+  - codehilite
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - tables
+  - toc:
+      permalink: true
+
+# Plugins
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          paths: [khivemcp]
+          options:
+            show_source: true
+            show_root_heading: true
+            show_category_heading: true
+
+# Navigation structure
+nav:
+  - Home: index.md
+  - Getting Started:
+    - Installation: getting-started/installation.md
+    - Quickstart: getting-started/quickstart.md
+  - Core Concepts:
+    - Configuration: concepts/configuration.md
+    - Service Groups: concepts/service_groups.md
+    - Operations: concepts/operations.md
+  - Guides:
+    - Running a Server: guides/running_server.md
+    - Testing: guides/testing.md
+  - Examples:
+    - Simple Echo: examples/simple_echo.md
+  - API Reference:
+    - Overview: api/index.md
+  - Contributing: contributing.md
