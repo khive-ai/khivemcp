@@ -61,6 +61,5 @@ class ServiceConfig(BaseModel):
 
 
 class ServiceGroup:
-
     def __init__(self, config: dict[str, Any] = None):
         self.group_config = config or {}

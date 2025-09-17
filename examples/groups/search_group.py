@@ -15,7 +15,6 @@ PROVIDERS = Literal["exa", "perplexity"]
 
 
 class SearchServiceGroup(ServiceGroup):
-
     def __init__(self, config: dict | None = None):
         """
         Initialize the LLMServiceGroup.
