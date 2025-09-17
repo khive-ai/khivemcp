@@ -1,5 +1,5 @@
 {
-  "name": "search-service",
+  "name": "search",
   "class_path": "examples.groups.search_group:SearchServiceGroup",
   "description": "A group for searching information online.",
   "env_vars": {}
