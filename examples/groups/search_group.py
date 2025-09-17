@@ -3,9 +3,9 @@ from typing import Literal
 
 from dotenv import load_dotenv
 from lionagi import iModel
-from lionagi.service.endpoints.base import APICalling
-from lionagi.service.providers.exa_.models import ExaSearchRequest
-from lionagi.service.providers.perplexity_.models import PerplexityChatCompletionRequest
+from lionagi.service.connections.api_calling import APICalling
+from lionagi.service.third_party.exa_models import ExaSearchRequest
+from lionagi.service.third_party.pplx_models import PerplexityChatRequest
 
 from khivemcp import ServiceGroup, operation
 
@@ -53,8 +53,8 @@ class SearchServiceGroup(ServiceGroup):
             "error": result.execution.error,
         }
 
-    @operation(name="perplexity_search", schema=PerplexityChatCompletionRequest)
-    async def perplexity_search(self, request: PerplexityChatCompletionRequest):
+    @operation(name="perplexity_search", schema=PerplexityChatRequest)
+    async def perplexity_search(self, request: PerplexityChatRequest):
         """Performs a search using Perplexity's chat completion endpoint."""
         if not "perplexity_search" in self.imodels:
             self.imodels["perplexity_search"] = iModel(

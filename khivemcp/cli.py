@@ -1,6 +1,5 @@
 """khivemcp Command Line Interface"""
 
-import asyncio
 import importlib
 import inspect
 import sys
@@ -9,8 +8,8 @@ from typing import Annotated
 
 import typer
 
-# Use FastMCP server
-from mcp.server.fastmcp import FastMCP
+# Use FastMCP 2.0+ server
+from fastmcp import FastMCP
 
 # Import khivemcp wrappers and config types/loader
 from .decorators import _KHIVEMCP_OP_META  # Internal detail for lookup
@@ -26,14 +25,14 @@ app = typer.Typer(
 )
 
 
-async def run_khivemcp_server(config: ServiceConfig | GroupConfig) -> None:
+def run_khivemcp_server(config: ServiceConfig | GroupConfig) -> None:
     """Initializes and runs the FastMCP server based on loaded configuration."""
 
     server_name = config.name
     server_description = getattr(config, "description", None)
 
     # 1. Instantiate FastMCP Server
-    mcp_server = FastMCP(name=server_name, instructions=server_description)
+    mcp = FastMCP(name=server_name, instructions=server_description)
     print(f"[Server] Initializing FastMCP server: '{server_name}'", file=sys.stderr)
 
     # 2. Prepare List of Groups to Load
@@ -146,26 +145,82 @@ async def run_khivemcp_server(config: ServiceConfig | GroupConfig) -> None:
                             # Optionally exit or just skip registration
                             continue  # Skip this duplicate tool
 
-                        # Register the BOUND instance method directly with FastMCP
+                        # Register the BOUND instance method with FastMCP 2.0+
                         print(
                             f"      [Register] Method '{member_name}' as MCP tool '{full_tool_name}'",
                             file=sys.stderr,
                         )
                         try:
-                            # For methods that take a Context parameter, we need to adapt them to work with FastMCP
-                            # FastMCP automatically creates a context object, we just need to make sure it's used
-                            method_sig = inspect.signature(member_value)
-                            params = list(method_sig.parameters.values())
+                            # Use FastMCP 2.0+ tool registration
+                            # Examine the khivemcp operation signature and create targeted wrapper
 
-                            # Register the tool directly - FastMCP will handle parameters appropriately
-                            mcp_server.add_tool(
-                                member_value,  # The bound method from the instance
-                                name=full_tool_name,
-                                description=op_description,
+                            # Get the signature to understand the expected parameters
+                            sig = inspect.signature(member_value)
+                            params = list(sig.parameters.values())
+
+                            print(
+                                f"        [Debug] Method signature: {sig}",
+                                file=sys.stderr,
                             )
-                            registered_tool_names.add(
-                                full_tool_name
-                            )  # Track registered name
+
+                            # Handle khivemcp patterns: (request: Schema) or (*, request: Schema)
+                            if len(params) == 1 and params[0].name == "request":
+                                # Create wrapper with correct signature for FastMCP
+                                request_param = params[0]
+
+                                # Get the Pydantic model class for JSON conversion
+                                schema_class = request_param.annotation
+
+                                # Create wrapper with proper closure to avoid variable capture issues
+                                def create_wrapper(bound_method, schema_cls):
+                                    async def tool_wrapper(request):
+                                        print(
+                                            f"        [Debug] Converting request using schema: {schema_cls}",
+                                            file=sys.stderr,
+                                        )
+                                        # Convert JSON string/dict to Pydantic model
+                                        if isinstance(request, str):
+                                            pydantic_request = (
+                                                schema_cls.model_validate_json(request)
+                                            )
+                                        elif isinstance(request, dict):
+                                            pydantic_request = (
+                                                schema_cls.model_validate(request)
+                                            )
+                                        else:
+                                            pydantic_request = request
+
+                                        # Call bound method with converted request as keyword argument
+                                        # This is required because khivemcp decorator expects request=...
+                                        return await bound_method(
+                                            request=pydantic_request
+                                        )
+
+                                    return tool_wrapper
+
+                                tool_wrapper = create_wrapper(
+                                    member_value, schema_class
+                                )
+
+                                # Set simpler annotation for FastMCP - accept dict instead of complex Pydantic model
+                                tool_wrapper.__annotations__ = {
+                                    "request": dict,  # Accept dict instead of complex Pydantic model
+                                    "return": sig.return_annotation,
+                                }
+                            else:
+                                # Fallback for other patterns
+                                async def tool_wrapper(*args, **kwargs):
+                                    return await member_value(*args, **kwargs)
+
+                            # Set metadata for FastMCP
+                            tool_wrapper.__name__ = local_op_name.replace("-", "_")
+                            tool_wrapper.__qualname__ = full_tool_name.replace("-", "_")
+                            tool_wrapper.__doc__ = op_description
+
+                            # Register tool
+                            mcp.tool(tool_wrapper)
+
+                            registered_tool_names.add(full_tool_name)
                             group_tools_registered += 1
                         except Exception as reg_e:
                             print(
@@ -215,9 +270,8 @@ async def run_khivemcp_server(config: ServiceConfig | GroupConfig) -> None:
         file=sys.stderr,
     )
     try:
-        # This is a blocking call
-        await mcp_server.run_stdio_async()
-        # To use SSE instead: await mcp_server.run_sse_async()
+        # FastMCP 2.0+ uses sync run() method by default (stdio transport)
+        mcp.run()
     except Exception as e:
         print(
             f"\n[Error] MCP server execution failed unexpectedly: {type(e).__name__}: {e}",
@@ -228,7 +282,7 @@ async def run_khivemcp_server(config: ServiceConfig | GroupConfig) -> None:
         # traceback.print_exc(file=sys.stderr)
         sys.exit(1)  # Exit with error code
     finally:
-        # This might not be reached if run_xxx_async runs indefinitely until interrupted
+        # This might not be reached if run() runs indefinitely until interrupted
         print("[Server] Server process finished.", file=sys.stderr)
 
 
@@ -261,12 +315,11 @@ def run(
         )
         raise typer.Exit(code=1)
 
-    # Run the main async server function
+    # Run the main server function (FastMCP 2.0+ is sync by default)
     try:
-        asyncio.run(run_khivemcp_server(config))
+        run_khivemcp_server(config)
     except KeyboardInterrupt:
         print("\n[CLI] Server shutdown requested by user.", file=sys.stderr)
-        # asyncio.run should handle cleanup, but add explicit cleanup if needed
     except Exception as e:
         # Catch errors from within run_khivemcp_server if they weren't handled there
         print(
