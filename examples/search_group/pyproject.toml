@@ -1,0 +1,9 @@
+[project]
+name = "search_group"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "lionagi>=0.17.4",
+]

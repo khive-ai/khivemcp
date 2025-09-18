@@ -97,8 +97,3 @@ exclude = [
     "verification",
     "scripts",
 ]
-
-[project.optional-dependencies]
-examples = [
-    "lionagi>=0.17.2",
-]

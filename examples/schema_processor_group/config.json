@@ -1,6 +1,6 @@
 {
-  "name": "data-processor",
-  "class_path": "examples.groups.data_processor_group:DataProcessorGroup",
+  "name": "schema-processor",
+  "class_path": "examples.schema_processor_group.group:SchemaProcessorGroup",
   "description": "A group for processing and validating data structures.",
   "config": {
     "default_report_format": "markdown",

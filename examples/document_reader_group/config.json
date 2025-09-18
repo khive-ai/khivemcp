@@ -1,0 +1,14 @@
+{
+  "name": "document-reader",
+  "class_path": "examples.document_reader_group.group:DocumentReaderServiceGroup",
+  "description": "Async document processing and reading service",
+  "config": {
+    "max_cache_size": 100,
+    "cache_dir": null,
+    "log_level": "INFO"
+  },
+  "_comments": {
+    "cache_dir": "If null, defaults to ~/.khivemcp.cache/reader/. Set to custom path to override.",
+    "max_cache_size": "Maximum number of documents to keep in cache before eviction"
+  }
+}
