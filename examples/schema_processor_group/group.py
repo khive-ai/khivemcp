@@ -89,7 +89,7 @@ class ErrorTestSchema(BaseModel):
 
 
 # --- Service Group Class ---
-class DataProcessorGroup(ServiceGroup):
+class SchemaProcessorGroup(ServiceGroup):
     """Service group using khiveMCP decorators and context."""
 
     def __init__(self, config: dict | None = None):

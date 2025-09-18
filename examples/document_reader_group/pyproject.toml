@@ -1,0 +1,10 @@
+[project]
+name = "document-reader-group"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "aiofiles>=23.1.0",
+    "docling>=2.40.0",
+]
