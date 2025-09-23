@@ -13,7 +13,7 @@ class TestGroupConfig:
         """Should create a valid GroupConfig instance."""
         group_config = GroupConfig(**sample_group_config)
         assert group_config.name == "test_group"
-        assert group_config.class_path == "module.path:TestClass"
+        assert group_config.class_path == "tests.dummies:GoodGroup"
         assert group_config.description == "Test group description"
         assert group_config.packages == ["package1", "package2"]
         assert group_config.config == {"key1": "value1", "key2": 123}

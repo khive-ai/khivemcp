@@ -1,24 +1,51 @@
-"""Shared fixtures for khivemcp tests."""
+"""Pytest configuration and shared fixtures for khivemcp tests."""
 
+import asyncio
 import json
+import sys
 import tempfile
-from collections.abc import Generator
 from pathlib import Path
-from typing import Any, Dict, Tuple
+from types import SimpleNamespace
+from typing import Any, Dict, List
 
 import pytest
 import yaml
-from mcp.shared.memory import create_connected_server_and_client_session
-from pydantic import BaseModel
 
-from khivemcp.types import GroupConfig, ServiceConfig, ServiceGroup
+# Add the parent directory to sys.path so we can import khivemcp modules
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
+from khivemcp.types import GroupConfig, ServiceConfig
+
+# Removed event_loop fixture to avoid pytest-asyncio conflict
 
 
-class TestModel(BaseModel):
-    """Test model for schema validation in decorator tests."""
+@pytest.fixture
+def mock_token():
+    """Create a mock access token with configurable scopes."""
 
-    name: str
-    value: int
+    def _create_token(scopes: List[str] = None, sub: str = "test_user"):
+        return SimpleNamespace(
+            scopes=scopes or [],
+            sub=sub,
+            exp=9999999999,  # Far future
+            iat=1000000000,
+            iss="test_issuer",
+        )
+
+    return _create_token
+
+
+@pytest.fixture
+def mock_context():
+    """Create a mock FastMCP Context with configurable token."""
+
+    def _create_context(token=None, **kwargs):
+        ctx = SimpleNamespace(**kwargs)
+        if token:
+            ctx.access_token = token
+        return ctx
+
+    return _create_context
 
 
 @pytest.fixture(scope="session")
@@ -37,11 +64,42 @@ def temp_dir(session_tmp_dir) -> Path:
 
 
 @pytest.fixture
-def sample_group_config() -> dict[str, Any]:
+def good_group_config():
+    """Create a valid GroupConfig for testing."""
+    return GroupConfig(
+        name="test_good",
+        class_path="tests.dummies:GoodGroup",
+        description="Good test group",
+        config={"test_param": "test_value"},
+    )
+
+
+@pytest.fixture
+def bad_group_config():
+    """Create a GroupConfig that points to a group that fails startup."""
+    return GroupConfig(
+        name="test_bad",
+        class_path="tests.dummies:BadGroup",
+        description="Bad test group for failure testing",
+    )
+
+
+@pytest.fixture
+def service_config(good_group_config, bad_group_config):
+    """Create a ServiceConfig with multiple groups."""
+    return ServiceConfig(
+        name="test_service",
+        description="Test service configuration",
+        groups={"good": good_group_config, "bad": bad_group_config},
+    )
+
+
+@pytest.fixture
+def sample_group_config():
     """Sample group configuration dictionary."""
     return {
         "name": "test_group",
-        "class_path": "module.path:TestClass",
+        "class_path": "tests.dummies:GoodGroup",
         "description": "Test group description",
         "packages": ["package1", "package2"],
         "config": {"key1": "value1", "key2": 123},
@@ -50,7 +108,7 @@ def sample_group_config() -> dict[str, Any]:
 
 
 @pytest.fixture
-def sample_service_config() -> dict[str, Any]:
+def sample_service_config():
     """Sample service configuration dictionary."""
     return {
         "name": "test_service",
@@ -58,13 +116,13 @@ def sample_service_config() -> dict[str, Any]:
         "groups": {
             "group1": {
                 "name": "test_group1",
-                "class_path": "module.path:TestClass1",
+                "class_path": "tests.dummies:GoodGroup",
                 "description": "Test group 1 description",
                 "config": {"key1": "value1"},
             },
             "group2": {
                 "name": "test_group2",
-                "class_path": "module.path:TestClass2",
+                "class_path": "tests.dummies:GoodGroup",
                 "description": "Test group 2 description",
                 "config": {"key2": "value2"},
             },
@@ -75,66 +133,89 @@ def sample_service_config() -> dict[str, Any]:
 
 
 @pytest.fixture
-def group_config_file(temp_dir: Path, sample_group_config: dict[str, Any]) -> Path:
+def sample_config_data():
+    """Sample configuration data for file-based tests."""
+    return {
+        "name": "test_service",
+        "description": "Test service from file",
+        "groups": {
+            "main": {
+                "name": "main_group",
+                "class_path": "tests.dummies:GoodGroup",
+                "description": "Main test group",
+                "config": {"param1": "value1", "param2": 42},
+            }
+        },
+    }
+
+
+@pytest.fixture
+def group_config_file(temp_dir, sample_group_config):
     """Create a temporary YAML file with group configuration."""
     config_file = temp_dir / "test_group_config.yaml"
-    config_file.write_text(yaml.dump(sample_group_config))
+    with open(config_file, "w") as f:
+        yaml.dump(sample_group_config, f)
     return config_file
 
 
 @pytest.fixture
-def group_config_json_file(temp_dir: Path, sample_group_config: dict[str, Any]) -> Path:
+def group_config_json_file(temp_dir, sample_group_config):
     """Create a temporary JSON file with group configuration."""
     config_file = temp_dir / "test_group_config.json"
-    config_file.write_text(json.dumps(sample_group_config))
+    with open(config_file, "w") as f:
+        json.dump(sample_group_config, f, indent=2)
     return config_file
 
 
 @pytest.fixture
-def service_config_file(temp_dir: Path, sample_service_config: dict[str, Any]) -> Path:
+def service_config_file(temp_dir, sample_service_config):
     """Create a temporary YAML file with service configuration."""
     config_file = temp_dir / "test_service_config.yaml"
-    config_file.write_text(yaml.dump(sample_service_config))
+    with open(config_file, "w") as f:
+        yaml.dump(sample_service_config, f)
     return config_file
 
 
 @pytest.fixture
-def valid_group_config(sample_group_config: dict[str, Any]) -> GroupConfig:
-    """Return a valid GroupConfig instance."""
-    return GroupConfig(**sample_group_config)
+def temp_config_file(tmp_path):
+    """Create a temporary configuration file for testing."""
+
+    def _create_config(config_data: Dict[str, Any], format: str = "yaml"):
+        if format == "yaml":
+            config_file = tmp_path / "test_config.yaml"
+            with open(config_file, "w") as f:
+                yaml.dump(config_data, f)
+        else:  # json
+            config_file = tmp_path / "test_config.json"
+            with open(config_file, "w") as f:
+                json.dump(config_data, f, indent=2)
+        return config_file
+
+    return _create_config
+
+
+class AsyncMock:
+    """Simple async mock for testing."""
+
+    def __init__(self, return_value=None, side_effect=None):
+        self.return_value = return_value
+        self.side_effect = side_effect
+        self.call_count = 0
+        self.call_args_list = []
+
+    async def __call__(self, *args, **kwargs):
+        self.call_count += 1
+        self.call_args_list.append((args, kwargs))
+
+        if self.side_effect:
+            if isinstance(self.side_effect, Exception):
+                raise self.side_effect
+            return self.side_effect(*args, **kwargs)
+
+        return self.return_value
 
 
 @pytest.fixture
-def valid_service_config(sample_service_config: dict[str, Any]) -> ServiceConfig:
-    """Return a valid ServiceConfig instance."""
-    return ServiceConfig(**sample_service_config)
-
-
-@pytest.fixture
-def mock_connected_server_and_client():
-    """Create an in-memory connected server and client pair."""
-    return create_connected_server_and_client_session
-
-
-class ConfTestServiceGroup(ServiceGroup):
-    """Service Group implementation for test fixtures."""
-
-    def __init__(self, config=None):
-        super().__init__(config)
-        self.initialized_with_config = config
-
-    async def test_operation(self, context, request=None):
-        """Test operation."""
-        return {"success": True, "message": "Test operation executed"}
-
-    async def test_operation_with_params(self, context, request=None):
-        """Test operation with parameters."""
-        if request:
-            return {"success": True, "message": f"Received: {request}"}
-        return {"success": True, "message": "No parameters received"}
-
-
-@pytest.fixture
-def test_service_group() -> ConfTestServiceGroup:
-    """Create a TestServiceGroup instance."""
-    return ConfTestServiceGroup(config={"test_key": "test_value"})
+def async_mock():
+    """Create an AsyncMock instance."""
+    return AsyncMock

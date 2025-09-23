@@ -1,6 +1,5 @@
 """Decorators for khivemcp Service Groups."""
 
-import functools
 import inspect
 from collections.abc import Callable
 from typing import Any
@@ -15,6 +14,9 @@ def operation(
     name: str | None = None,
     description: str | None = None,
     schema: type[BaseModel] = None,
+    auth: list[str] | None = None,
+    rate_limit: bool = False,
+    accepts_context: bool = None,
 ):
     """
     Decorator to mark an async method in an khivemcp group class as an operation.
@@ -28,11 +30,25 @@ def operation(
             'group_config_name.local_name'.
         description: A description for the MCP tool. If None, the method's
             docstring is used.
+        schema: Pydantic model for request validation.
+        auth: List of required permissions (e.g., ["read", "write"]). If provided
+            and the group has a FastMCP auth provider, these permissions will be
+            enforced. None means no auth required for this operation.
+        rate_limit: Whether this operation should be rate limited. Note that
+            groups can implement their own rate limiting logic.
+        accepts_context: Whether the method accepts a 'ctx' parameter for FastMCP
+            Context. If None, automatically detected from method signature.
     """
     if name is not None and not isinstance(name, str):
         raise TypeError("operation 'name' must be a string or None.")
     if description is not None and not isinstance(description, str):
         raise TypeError("operation 'description' must be a string or None.")
+    if auth is not None and not isinstance(auth, list):
+        raise TypeError(
+            "operation 'auth' must be a list of permission strings or None."
+        )
+    if not isinstance(rate_limit, bool):
+        raise TypeError("operation 'rate_limit' must be a boolean.")
 
     def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
         if not inspect.isfunction(func):
@@ -53,6 +69,12 @@ def operation(
             # Ensure the schema is a valid BaseModel subclass
             op_desc += f"Input schema: {schema.model_json_schema()}."
 
+        # Auto-detect if method accepts context parameter if not explicitly set
+        has_context_param = accepts_context
+        if has_context_param is None:
+            sig = inspect.signature(func)
+            has_context_param = "ctx" in sig.parameters
+
         # Store metadata directly on the function object
         setattr(
             func,
@@ -61,33 +83,15 @@ def operation(
                 "local_name": op_name,
                 "description": op_desc,
                 "is_khivemcp_operation": True,  # Explicit marker
+                "schema": schema,  # Store the schema class for later use
+                "auth_required": auth,  # List of required permissions or None
+                "rate_limited": rate_limit,  # Boolean flag for rate limiting
+                "accepts_context": has_context_param,  # Whether method accepts ctx parameter
             },
         )
 
-        # The wrapper primarily ensures metadata is attached.
-        # The original function (`func`) is what gets inspected for signature/hints.
-        @functools.wraps(func)
-        async def wrapper(*args, **kwargs):
-            # We don't need complex logic here anymore. The registration process
-            # will call the original bound method.
-            request = kwargs.get("request")
-            if request and schema:
-                if isinstance(request, dict):
-                    request = schema.model_validate(request)
-                if isinstance(request, str):
-                    request = schema.model_validate_json(request)
-
-            return await func(*args, request=request)
-
-        # Copy metadata to the wrapper as well, just in case something inspects the wrapper directly
-        # (though registration should ideally look at the original func via __wrapped__)
-        # setattr(wrapper, _khivemcp_OP_META, getattr(func, _khivemcp_OP_META))
-        # Update: functools.wraps should handle copying attributes like __doc__, __name__
-        # Let's ensure our custom attribute is also copied if needed, though maybe redundant.
-        if hasattr(func, _KHIVEMCP_OP_META):
-            setattr(wrapper, _KHIVEMCP_OP_META, getattr(func, _KHIVEMCP_OP_META))
-
-        wrapper.doc = func.__doc__
-        return wrapper
+        # Metadata-only decorator: return the original function unchanged.
+        # All coercion happens in tools.create_tool_wrapper() during registration.
+        return func
 
     return decorator

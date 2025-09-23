@@ -1,13 +1,15 @@
 """Utility functions for loading khivemcp configurations."""
 
 import json
-import sys
+import logging
 from pathlib import Path
 
 import yaml
 from pydantic import ValidationError
 
 from .types import GroupConfig, ServiceConfig
+
+logger = logging.getLogger(__name__)
 
 
 def load_config(path: Path) -> ServiceConfig | GroupConfig:
@@ -30,7 +32,7 @@ def load_config(path: Path) -> ServiceConfig | GroupConfig:
     if not path.exists():
         raise FileNotFoundError(f"Configuration file not found: {path}")
 
-    print(f"[Config Loader] Reading configuration from: {path}", file=sys.stderr)
+    logger.debug(f"Reading configuration from: {path}")
     file_content = path.read_text(encoding="utf-8")
 
     try:
@@ -39,48 +41,30 @@ def load_config(path: Path) -> ServiceConfig | GroupConfig:
             data = yaml.safe_load(file_content)
             if not isinstance(data, dict):
                 raise ValueError("YAML content does not resolve to a dictionary.")
-            print(
-                f"[Config Loader] Parsed YAML content from '{path.name}'",
-                file=sys.stderr,
-            )
+            logger.debug(f"Parsed YAML content from '{path.name}'")
         elif path.suffix.lower() == ".json":
             data = json.loads(file_content)
             if not isinstance(data, dict):
                 raise ValueError("JSON content does not resolve to an object.")
-            print(
-                f"[Config Loader] Parsed JSON content from '{path.name}'",
-                file=sys.stderr,
-            )
+            logger.debug(f"Parsed JSON content from '{path.name}'")
         else:
             raise ValueError(f"Unsupported configuration file format: {path.suffix}")
 
         # Differentiate based on structure (presence of 'groups' dictionary)
         if "groups" in data and isinstance(data.get("groups"), dict):
-            print(
-                f"[Config Loader] Detected ServiceConfig structure. Validating...",
-                file=sys.stderr,
-            )
+            logger.debug("Detected ServiceConfig structure. Validating...")
             config_obj = ServiceConfig(**data)
-            print(
-                f"[Config Loader] ServiceConfig '{config_obj.name}' validated successfully.",
-                file=sys.stderr,
-            )
+            logger.info(f"ServiceConfig '{config_obj.name}' validated successfully")
             return config_obj
         else:
-            print(
-                f"[Config Loader] Assuming GroupConfig structure. Validating...",
-                file=sys.stderr,
-            )
+            logger.debug("Assuming GroupConfig structure. Validating...")
             # GroupConfig requires 'class_path'
             if "class_path" not in data:
                 raise ValueError(
                     "Configuration appears to be GroupConfig but is missing the required 'class_path' field."
                 )
             config_obj = GroupConfig(**data)
-            print(
-                f"[Config Loader] GroupConfig '{config_obj.name}' validated successfully.",
-                file=sys.stderr,
-            )
+            logger.info(f"GroupConfig '{config_obj.name}' validated successfully")
             return config_obj
 
     except (json.JSONDecodeError, yaml.YAMLError) as e:

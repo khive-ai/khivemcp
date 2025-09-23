@@ -218,7 +218,7 @@ class DataProcessorGroup(ServiceGroup):
                 report_lines.append("<h2>Data Items</h2>")
                 for item in processed_items:
                     report_lines.append(
-                        f"<div style='border:1px solid #ccc; margin-bottom:10px; padding:10px;'>"
+                        "<div style='border:1px solid #ccc; margin-bottom:10px; padding:10px;'>"
                     )
                     report_lines.append(f"<h3>Item ID: {item.get('id', 'N/A')}</h3>")
                     report_lines.append(
@@ -380,19 +380,22 @@ class DataProcessorGroup(ServiceGroup):
         expected_type_msg = schema_type
         current_type_name = type(data).__name__
 
-        if schema_type == "object" and isinstance(data, dict):
-            type_valid = True
-        elif schema_type == "array" and isinstance(data, list):
-            type_valid = True
-        elif schema_type == "string" and isinstance(data, str):
-            type_valid = True
-        elif schema_type == "number" and isinstance(data, (int, float)):
-            type_valid = True
-        elif schema_type == "integer" and isinstance(data, int):
-            type_valid = True
-        elif schema_type == "boolean" and isinstance(data, bool):
-            type_valid = True
-        elif schema_type == "null" and data is None:
+        if (
+            schema_type == "object"
+            and isinstance(data, dict)
+            or schema_type == "array"
+            and isinstance(data, list)
+            or schema_type == "string"
+            and isinstance(data, str)
+            or schema_type == "number"
+            and isinstance(data, (int, float))
+            or schema_type == "integer"
+            and isinstance(data, int)
+            or schema_type == "boolean"
+            and isinstance(data, bool)
+            or schema_type == "null"
+            and data is None
+        ):
             type_valid = True
 
         if not type_valid:

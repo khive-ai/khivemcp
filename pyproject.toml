@@ -1,6 +1,6 @@
 [project]
 name = "khivemcp"
-version = "1.0.0"
+version = "1.1.0"
 description = "An easy mcp deployment framework"
 authors = [
     { name = "HaiyangLi", email = "quantocean.li@gmail.com" },
@@ -12,6 +12,7 @@ dependencies = [
     "pydantic>=2.0.0",
     "pyyaml>=5.3.1",
     "typer>=0.15.0",
+    "uvicorn>=0.30.0",
 ]
 license = {file = "LICENSE"}
 classifiers=[
@@ -37,6 +38,9 @@ dev = [
     "pytest>=8.3.4",
     "pytest-asyncio>=0.24.0",
     "pytest-cov>=4.1.0",
+    "pytest-benchmark>=4.0.0",
+    "pytest-mock>=3.12.0",
+    "hypothesis>=6.92.0",
     "ruff>=0.13.0",
 ]
 
@@ -75,7 +79,7 @@ markers = [
 ]
 
 [project.scripts]
-khivemcp = "khivemcp.cli:app [cli]"
+khivemcp = "khivemcp.cli:app"
 
 [build-system]
 requires = ["hatchling"]
@@ -100,5 +104,5 @@ exclude = [
 
 [project.optional-dependencies]
 examples = [
-    "lionagi>=0.17.2",
+    "lionagi>=0.17.8",
 ]
