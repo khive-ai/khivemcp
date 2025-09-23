@@ -1,0 +1,57 @@
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+.pytest_cache
+.coverage
+
+# Virtual environments
+.venv
+venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Documentation
+*.md
+!README.md
+
+# Development files
+dev_style.md
+.benchmarks/
+archive/
+scripts/verification
+
+# Logs
+*.log
+logs/
+temp_logs/
+
+# Test files
+tests/
+test_*.py
+
+# Lock files (will be regenerated)
+uv.lock
+
+# Other
+.pre-commit-config.yaml
+.roomodes
+
+# Don't ignore .env - we need it for API keys
+!.env
