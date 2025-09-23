@@ -8,7 +8,7 @@ from mcp.client.stdio import StdioServerParameters, stdio_client
 
 
 async def run_test(server_cmd: list[str]):
-    print(f"\n--- Starting Test Run ---")
+    print("\n--- Starting Test Run ---")
     print(f"Server command: {' '.join(server_cmd)}")
 
     server_params = StdioServerParameters(command=server_cmd[0], args=server_cmd[1:])
@@ -39,7 +39,7 @@ async def run_test(server_cmd: list[str]):
                 print("Client: All tests passed for this run.")
 
     except Exception as e:
-        print(f"\n--- CLIENT ERROR ---")
+        print("\n--- CLIENT ERROR ---")
         print(f"An error occurred during the client test run: {type(e).__name__}: {e}")
         # Consider adding traceback print here if needed
         print("--------------------")
@@ -149,7 +149,7 @@ async def test_tool_calls_invalid(session: ClientSession):
     if "validation error" in error_text and "Field required" in error_text:
         print("Client: [PASS] Received expected validation error in response")
     else:
-        print(f"Client: [FAIL] Expected validation error but got different response")
+        print("Client: [FAIL] Expected validation error but got different response")
         assert False, "Expected validation error message in response"
 
 
@@ -189,10 +189,10 @@ async def test_tool_error_handling(session: ClientSession):
         )
 
         if "Intentional test error: ValueError" in error_text:
-            print(f"Client: [PASS] Received expected error message in response")
+            print("Client: [PASS] Received expected error message in response")
         else:
             print(
-                f"Client: [FAIL] Expected specific error message but got different response"
+                "Client: [FAIL] Expected specific error message but got different response"
             )
             assert False, "Expected 'Intentional test error: ValueError' in response"
 
