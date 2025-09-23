@@ -1,12 +1,9 @@
 """Tests for khivemcp.utils module."""
 
 import json
-import tempfile
-from pathlib import Path
 
 import pytest
 import yaml
-from pydantic import ValidationError
 
 from khivemcp.types import GroupConfig, ServiceConfig
 from khivemcp.utils import load_config
@@ -20,7 +17,7 @@ class TestLoadConfig:
         config = load_config(group_config_file)
         assert isinstance(config, GroupConfig)
         assert config.name == "test_group"
-        assert config.class_path == "module.path:TestClass"
+        assert config.class_path == "tests.dummies:GoodGroup"
         assert config.description == "Test group description"
 
     def test_load_group_config_json(self, group_config_json_file):
@@ -28,7 +25,7 @@ class TestLoadConfig:
         config = load_config(group_config_json_file)
         assert isinstance(config, GroupConfig)
         assert config.name == "test_group"
-        assert config.class_path == "module.path:TestClass"
+        assert config.class_path == "tests.dummies:GoodGroup"
         assert config.description == "Test group description"
 
     def test_load_service_config(self, service_config_file):
