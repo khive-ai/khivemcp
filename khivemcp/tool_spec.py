@@ -63,13 +63,10 @@ def collect_tools_from_groups(instantiated_groups) -> list[ToolSpec]:
                 )
                 continue
 
-            # Construct the full MCP tool name
-            full_tool_name = f"{group_name}_{local_op_name}"
-
             # Check for duplicate tool names across all groups
-            if full_tool_name in registered_tool_names:
+            if local_op_name in registered_tool_names:
                 logger.error(
-                    f"Duplicate MCP tool name '{full_tool_name}' detected "
+                    f"Duplicate MCP tool name '{local_op_name}' detected "
                     f"(from group '{group_name}', method '{member_name}'). Skipping."
                 )
                 continue
@@ -77,7 +74,7 @@ def collect_tools_from_groups(instantiated_groups) -> list[ToolSpec]:
             # Create tool specification
             tool_spec = ToolSpec(
                 group_name=group_name,
-                full_tool_name=full_tool_name,
+                full_tool_name=local_op_name,
                 bound_method=member_value,
                 schema_cls=op_meta.get("schema"),
                 accepts_ctx=op_meta.get("accepts_context", False),
@@ -89,10 +86,10 @@ def collect_tools_from_groups(instantiated_groups) -> list[ToolSpec]:
             )
 
             tool_specs.append(tool_spec)
-            registered_tool_names.add(full_tool_name)
+            registered_tool_names.add(local_op_name)
             group_tools += 1
 
-            logger.debug(f"Collected tool '{full_tool_name}' from group '{group_name}'")
+            logger.debug(f"Collected tool '{local_op_name}' from group '{group_name}'")
 
         if group_tools == 0:
             logger.info(f"No @operation methods found in group '{group_name}'")

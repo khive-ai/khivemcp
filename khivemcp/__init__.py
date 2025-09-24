@@ -5,7 +5,7 @@
 from .decorators import operation
 from .types import GroupConfig, ServiceConfig, ServiceGroup
 
-__version__ = "1.1.0"
+__version__ = "1.1.1"
 
 __all__ = [
     "operation",
